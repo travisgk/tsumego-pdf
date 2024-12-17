@@ -1,7 +1,8 @@
 from PIL import Image, ImageDraw
 import reportlab.lib.pagesizes
 from reportlab.pdfgen import canvas
-from diagram import DPI, get_problems, calc_stone_size, make_diagram
+from draw_game.diagram import DPI, get_problems, calc_stone_size, make_diagram
+from create_pdf import png_to_pdf
 
 MARGIN_LEFT_IN = 0.5
 MARGIN_TOP_IN = 0.5
@@ -16,6 +17,7 @@ def create_pages(
     random_flip_xy: bool=True,
     random_flip_x: bool=True,
     random_flip_y: bool=True,
+    include_text: bool=True,
     placement_method: str="block",
     landscape: bool=False,
     num_columns: int=2,
@@ -82,10 +84,12 @@ def create_pages(
             collection,
             problem_num,
             col_width_in,
+            color_to_play=color_to_play,
             random_flip_xy=random_flip_xy,
             random_flip_x=random_flip_x,
             random_flip_y=random_flip_y,
-            color_to_play=color_to_play,
+            placement_method=placement_method,
+            include_text=include_text,
         )
 
         next_y = current_y + diagram.size[1]
@@ -129,24 +133,27 @@ def main():
     pages = create_pages(
         page_size,
         "cho-elementary",
-        problem_nums=[i for i in range(1, 101)],
-        num_columns=3,
+        problem_nums=[17, 30, 38, 43, 45, 50, 54, 55, 60, 64, 65, 66, 67, 75, 76, 78, 80, 96, 97, 101, 104, 107, 124, 125, 126, 127, 141, 172, 174, 177, 179, 180, 187, 189, 190, 193, 203],
+        num_columns=2,
+        landscape=False,
         placement_method="block",
-        column_spacing_in=1,
-        spacing_below_in=0.5,
-        color_to_play="random",
+        include_text=True,
+        column_spacing_in=3,
+        spacing_below_in=1,
+        color_to_play="black",
     )
-    pages[0].show()
 
-    board_graphic_width_in = 2 + 7/8
+    png_to_pdf(pages, "pages.pdf", page_size, landscape=False)
+    #for i, page in enumerate(pages):
+    #    page.save(f"page-{i}.png")
 
-    #for cat in ["elementary", "intermediate", "advanced"]:
-    #    for i in range(1, 1000):
-    diagram = make_diagram(
+    #board_graphic_width_in = 2 + 7/8
+
+    """diagram = make_diagram(
         "cho-elementary",
         533,
         board_graphic_width_in,
-    )
+    )"""
     
 
     """

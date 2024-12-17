@@ -3,17 +3,17 @@ from PIL import Image, ImageDraw, ImageFont
 
 DPI = 300
 
+LINE_WIDTH_IN = 1/96
+LINE_COLOR = (128, 128, 128)
+STAR_POINT_RADIUS_IN = 1/96
+
 TEXT_RGB = (128, 128, 128)
-TEXT_HEIGHT_IN = 0.1
-TEXT_PADDING_TOP_IN = 0.03
-TEXT_PADDING_BOTTOM_IN = 0.0625
+TEXT_HEIGHT_IN = 0.21
+TEXT_PADDING_TOP_IN = 0.0625
+TEXT_PADDING_BOTTOM_IN = 0
 
 def draw_board(width_in):
     """ Returns a drawn Go board."""
-    LINE_WIDTH_IN = 1/128
-    LINE_COLOR = (128, 128, 128)
-    STAR_POINT_RADIUS_IN = 1/96
-
     line_width = max(1, round(LINE_WIDTH_IN * DPI))
 
     width, height = round(width_in * DPI), round(width_in * DPI)
@@ -127,6 +127,7 @@ def draw_stone(board, x, y, stone_size_px, is_black: bool):
 
 _FONT = None
 def create_text_image(text: str):
+    """ Returns an image with text drawn inside. """
     # loads font if it hasn't been done yet.
     global _FONT
     if _FONT is None:

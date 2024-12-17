@@ -2,15 +2,13 @@ import json
 import os
 import random
 from PIL import Image, ImageDraw
-from create_problems_json import create_problems_json
-from board_graphics import *
+from puzzles.problems_json import create_problems_json
+from .board_graphics import *
 
 
 
 # this is the display width for the board. 11 is the min.
-CELLS_WIDE = 12
-
-
+_display_width = 12 # 12
 
 
 _PROBLEMS = None
@@ -38,7 +36,7 @@ def _load_problems():
 
 
 def calc_stone_size(diagram_width_in):
-    cells_wide = min(19, CELLS_WIDE)
+    cells_wide = min(19, _display_width)
     stone_size_in = diagram_width_in / cells_wide
     stone_size_px = stone_size_in * DPI
 
@@ -154,7 +152,7 @@ def make_diagram(
         # the bbox is relatively square, so it won't be visually jarring
         # to let it be flipped diagonally either way.
         pass
-    elif max_x > CELLS_WIDE - 2:
+    elif max_x > _display_width - 2:
         # if the bbox of the stones goes beyond the display width,
         # then the diagram will forcibly be flipped diagonally 
         # in order to fit within the desired display with.
@@ -192,8 +190,8 @@ def make_diagram(
 
     # crops the puzzle.
     w, h = board.size
-    left = 0 if is_left else w - stone_size_px * CELLS_WIDE
-    right = left + stone_size_px * CELLS_WIDE
+    left = 0 if is_left else w - stone_size_px * _display_width
+    right = left + stone_size_px * _display_width
     top = 0 if is_top else h - stone_size_px * (max_y + 2)
     bottom = top + stone_size_px * (max_y + 2)
     

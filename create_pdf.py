@@ -1,3 +1,6 @@
+import os
+from reportlab.pdfgen import canvas
+
 def png_to_pdf(
     images: list, pdf_path: str, page_size, landscape: bool=False
 ):
