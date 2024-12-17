@@ -117,7 +117,9 @@ def draw_stone(board, x, y, stone_size_px, is_black: bool):
     board.paste(img, (draw_x, draw_y), mask=img)
     
 TEXT_RGB = (128, 128, 128)
-TEXT_HEIGHT_IN = 0.2
+TEXT_HEIGHT_IN = 0.1
+TEXT_PADDING_TOP_IN = 0.03
+TEXT_PADDING_BOTTOM_IN = 0.0625
 def make_diagram(
     category: str,
     problem_num: int,
@@ -132,24 +134,23 @@ def make_diagram(
             # loads font.
             local_dir = os.path.dirname(os.path.abspath(__file__))
             font_path = os.path.join(local_dir, "font.ttf")
-            _FONT = ImageFont.truetype(font_path, size=DPI)
+            _FONT = ImageFont.truetype(font_path, size=DPI/4)
 
         text = f"problem {problem_num}"
         text_image = Image.new("RGB", (2000, 1000), (255, 255, 255))
         text_draw = ImageDraw.Draw(text_image)
-        bbox = text_draw.textbbox((0, 0), text, font=_FONT)
+        bbox = text_draw.textbbox((200, 200), text, font=_FONT)
 
-        TEXT_PADDING_TOP = 60
-        TEXT_PADDING_BOTTOM = 60
+        
 
         bbox = (
             bbox[0],
-            bbox[1] - TEXT_PADDING_TOP,
+            bbox[1] - 10,
             bbox[2],
-            bbox[3] + TEXT_PADDING_BOTTOM,
+            bbox[3] + 10,
         )
 
-        text_draw.text((0, 0), text, font=_FONT, fill=TEXT_RGB)
+        text_draw.text((200, 200), text, font=_FONT, fill=TEXT_RGB)
         text_image = text_image.crop(bbox)
         w, h = text_image.size
         height_px = TEXT_HEIGHT_IN * DPI
@@ -241,13 +242,16 @@ def make_diagram(
     board = board.crop((left, top, right, bottom))
 
     if include_text:
+        TEXT_PADDING_TOP = TEXT_PADDING_TOP_IN * DPI
+        TEXT_PADDING_BOTTOM = TEXT_PADDING_BOTTOM_IN * DPI
+
         w, h = board.size
-        additional_height = text_image.size[1]
+        additional_height = round(text_image.size[1] + TEXT_PADDING_TOP + TEXT_PADDING_BOTTOM)
         new_image = Image.new("RGB", (w, h + additional_height), (255, 255, 255))
         new_image.paste(board, (0, 0))
 
         text_x = round(w/2 - text_image.size[0]/2)
-        new_image.paste(text_image, (text_x, h))
+        new_image.paste(text_image, (text_x, round(h + TEXT_PADDING_TOP)))
 
         board = new_image
 
