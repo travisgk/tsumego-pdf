@@ -21,7 +21,7 @@ def create_pages(
         placeholder = w_in
         w_in = h_in
         h_in = placeholder
-        
+
     w, h = w_in * DPI, h_in * DPI
 
     # calculates margins.
@@ -44,7 +44,7 @@ def main():
     #    for i in range(1, 1000):
     diagram = make_diagram(
         "elementary",
-        189,
+        533,
         board_graphic_width_in,
         random_flip=True,
     )

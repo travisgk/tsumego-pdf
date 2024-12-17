@@ -116,13 +116,52 @@ def draw_stone(board, x, y, stone_size_px, is_black: bool):
     img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
     board.paste(img, (draw_x, draw_y), mask=img)
     
-        
+TEXT_RGB = (128, 128, 128)
+TEXT_HEIGHT_IN = 0.2
 def make_diagram(
     category: str,
     problem_num: int,
     board_graphic_width_in,
-    random_flip: bool=False
+    random_flip: bool=False,
+    include_text: bool=True,
 ):
+    text_image = None
+    if include_text:
+        global _FONT
+        if _FONT is None:
+            # loads font.
+            local_dir = os.path.dirname(os.path.abspath(__file__))
+            font_path = os.path.join(local_dir, "font.ttf")
+            _FONT = ImageFont.truetype(font_path, size=DPI)
+
+        text = f"problem {problem_num}"
+        text_image = Image.new("RGB", (2000, 1000), (255, 255, 255))
+        text_draw = ImageDraw.Draw(text_image)
+        bbox = text_draw.textbbox((0, 0), text, font=_FONT)
+
+        TEXT_PADDING_TOP = 60
+        TEXT_PADDING_BOTTOM = 60
+
+        bbox = (
+            bbox[0],
+            bbox[1] - TEXT_PADDING_TOP,
+            bbox[2],
+            bbox[3] + TEXT_PADDING_BOTTOM,
+        )
+
+        text_draw.text((0, 0), text, font=_FONT, fill=TEXT_RGB)
+        text_image = text_image.crop(bbox)
+        w, h = text_image.size
+        height_px = TEXT_HEIGHT_IN * DPI
+        ratio = w / h
+        width_px = height_px * ratio
+
+        text_image = text_image.resize(
+            (round(width_px), round(height_px)),
+            Image.Resampling.LANCZOS,
+        )
+
+
     CELLS_WIDE = 12
     load_problems()
 
@@ -163,9 +202,8 @@ def make_diagram(
     elif max_x > CELLS_WIDE - 2:
         # enforces xy flipping after a certain width
         flip_xy = True
-    elif max_x > 5:
+    elif max_x >= 4:
         flip_xy = False
-
     
     if flip_xy:
         board = board.transpose(Image.TRANSPOSE)
@@ -201,5 +239,17 @@ def make_diagram(
     bottom = top + stone_size_px * (max_y + 2)
     
     board = board.crop((left, top, right, bottom))
+
+    if include_text:
+        w, h = board.size
+        additional_height = text_image.size[1]
+        new_image = Image.new("RGB", (w, h + additional_height), (255, 255, 255))
+        new_image.paste(board, (0, 0))
+
+        text_x = round(w/2 - text_image.size[0]/2)
+        new_image.paste(text_image, (text_x, h))
+
+        board = new_image
+
 
     return board
