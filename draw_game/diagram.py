@@ -24,8 +24,8 @@ def _load_problems():
     if _PROBLEMS is not None:
         return
 
-    local_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(local_dir, "go-problems.json")
+    local_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(local_dir, "puzzles", "go-problems.json")
 
     if not os.path.exists(file_path):
         create_problems_json(file_path)
