@@ -5,18 +5,17 @@ DPI = 300
 
 LINE_WIDTH_IN = 1/96
 LINE_COLOR = (128, 128, 128)
-STAR_POINT_RADIUS_IN = 1/96
+STAR_POINT_RADIUS_IN = 1/48
 
-TEXT_RGB = (128, 128, 128)
 TEXT_HEIGHT_IN = 0.21
 TEXT_PADDING_TOP_IN = 0.0625
 TEXT_PADDING_BOTTOM_IN = 0
 
 def draw_board(width_in):
     """ Returns a drawn Go board."""
-    line_width = max(1, round(LINE_WIDTH_IN * DPI))
+    line_width = max(1, int(LINE_WIDTH_IN * DPI))
 
-    width, height = round(width_in * DPI), round(width_in * DPI)
+    width, height = int(width_in * DPI), int(width_in * DPI)
     image = Image.new("RGB", (width, height), "white")
 
     # draws lines.
@@ -26,28 +25,28 @@ def draw_board(width_in):
 
     # draws the vertical lines.
     for x in range(19):
-        draw_x = round(cell_size_px/2 + x*cell_size_px)
-        y0 = round(cell_size_px/2)
-        y1 = round(y0 + 18*cell_size_px)
+        draw_x = int(cell_size_px/2 + x*cell_size_px)
+        y0 = int(cell_size_px/2)
+        y1 = int(y0 + 18*cell_size_px)
         a = (draw_x, y0 - line_width//2 + 1)
         b = (draw_x, y1 + line_width//2 - 1)
         draw.line([a, b], fill=LINE_COLOR, width=line_width)
 
     # draws the horizontal lines.
     for y in range(19):
-        draw_y = round(cell_size_px/2 + y*cell_size_px)
-        x0 = round(cell_size_px/2)
-        x1 = round(x0 + 18*cell_size_px)
+        draw_y = int(cell_size_px/2 + y*cell_size_px)
+        x0 = int(cell_size_px/2)
+        x1 = int(x0 + 18*cell_size_px)
         a = (x0 - line_width//2 + 1, draw_y)
         b = (x1 + line_width//2 - 1, draw_y)
         draw.line([a, b], fill=LINE_COLOR, width=line_width)
 
     # draws the star points.
-    radius_px = round(STAR_POINT_RADIUS_IN * DPI)
+    radius_px = int(STAR_POINT_RADIUS_IN * DPI)
     STAR_POINTS = [(x, y) for x in [3, 9, 15] for y in [3, 9, 15]]
     for p in STAR_POINTS:
-        x = round(cell_size_px/2 + p[0]*cell_size_px)
-        y = round(cell_size_px/2 + p[1]*cell_size_px)
+        x = int(cell_size_px/2 + p[0]*cell_size_px)
+        y = int(cell_size_px/2 + p[1]*cell_size_px)
         bbox = (
             x - radius_px,
             y - radius_px,
@@ -60,7 +59,7 @@ def draw_board(width_in):
 
 
 _GRAPHIC_PADDING_PX = 6
-def create_stone_graphic(stone_size_px, is_black: bool):
+def _create_stone_graphic(stone_size_px, is_black: bool):
     """ Returns a PIL image with the stone graphic inside. """
     OUTLINE_THICKNESS_IN = 1/128
     SCALE = 4
@@ -70,7 +69,7 @@ def create_stone_graphic(stone_size_px, is_black: bool):
     h = stone_size_px + _GRAPHIC_PADDING_PX * 2
     
     # stone image is drawn scaled up.
-    large_size = (round(w * SCALE), round(h * SCALE))
+    large_size = (int(w * SCALE), int(h * SCALE))
     large_image = Image.new("RGBA", large_size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(large_image)
     
@@ -90,7 +89,7 @@ def create_stone_graphic(stone_size_px, is_black: bool):
     if not is_black:
         # draws a smaller white circle on top.
         fill_color = "white"
-        inner_radius = round(outer_radius - OUTLINE_THICKNESS_IN * SCALE * DPI)
+        inner_radius = int(outer_radius - OUTLINE_THICKNESS_IN * SCALE * DPI)
         
         bbox = (
             center[0] - inner_radius,
@@ -101,32 +100,52 @@ def create_stone_graphic(stone_size_px, is_black: bool):
         draw.ellipse(bbox, fill=fill_color)
 
     return large_image.resize(
-        (int(w) + int(w)%2, int(h) + int(h)%2),
+        (int(w), int(h)),
         Image.Resampling.LANCZOS,
     )
 
+def _load_mark_image(stone_size_px, is_black: bool):
+    local_dir = os.path.dirname(os.path.abspath(__file__))
+    file_name = "mark-black.png" if is_black else "mark-white.png"
+    graphic = Image.open(os.path.join(local_dir, file_name))
+    new_size = (stone_size_px, stone_size_px)
+    
+    return graphic.resize(new_size, Image.Resampling.LANCZOS)
 
-_LAST_STONE_SIZE = None
+
 _BLACK_STONE_IMAGE = None
 _WHITE_STONE_IMAGE = None
 def draw_stone(board, x, y, stone_size_px, is_black: bool):
     """ Draws a stone graphic at the given board coordinate. """
 
     # loads stone graphics if they haven't been loaded yet.
-    global _LAST_STONE_SIZE, _BLACK_STONE_IMAGE, _WHITE_STONE_IMAGE
-    if _LAST_STONE_SIZE != stone_size_px:
-        _BLACK_STONE_IMAGE = create_stone_graphic(stone_size_px, is_black=True)
-        _WHITE_STONE_IMAGE = create_stone_graphic(stone_size_px, is_black=False)
-        _LAST_STONE_SIZE = stone_size_px
+    global _BLACK_STONE_IMAGE, _WHITE_STONE_IMAGE
+    if _BLACK_STONE_IMAGE is None:
+        _BLACK_STONE_IMAGE = _create_stone_graphic(stone_size_px, is_black=True)
+        _WHITE_STONE_IMAGE = _create_stone_graphic(stone_size_px, is_black=False)
 
-    draw_x = round(x * stone_size_px) - _GRAPHIC_PADDING_PX
-    draw_y = round(y * stone_size_px) - _GRAPHIC_PADDING_PX
+    draw_x = int(x * stone_size_px) - _GRAPHIC_PADDING_PX
+    draw_y = int(y * stone_size_px) - _GRAPHIC_PADDING_PX
     img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
     board.paste(img, (draw_x, draw_y), mask=img)
 
 
+_SOLUTION_BLACK_IMAGE = None
+_SOLUTION_WHITE_IMAGE = None
+def draw_mark(board, x, y, stone_size_px, is_black):
+    global _SOLUTION_BLACK_IMAGE, _SOLUTION_WHITE_IMAGE
+    if _SOLUTION_BLACK_IMAGE is None:
+        _SOLUTION_BLACK_IMAGE = _load_mark_image(stone_size_px, is_black=True)
+        _SOLUTION_WHITE_IMAGE = _load_mark_image(stone_size_px, is_black=False)
+
+    draw_x = int(x * stone_size_px)
+    draw_y = int(y * stone_size_px)
+    img = _SOLUTION_BLACK_IMAGE if is_black else _SOLUTION_WHITE_IMAGE
+    board.paste(img, (draw_x, draw_y), mask=img)
+
+
 _FONT = None
-def create_text_image(text: str):
+def create_text_image(text: str, rgb_fill: tuple):
     """ Returns an image with text drawn inside. """
     # loads font if it hasn't been done yet.
     global _FONT
@@ -143,7 +162,7 @@ def create_text_image(text: str):
     bbox = (bbox[0], bbox[1] - 10, bbox[2], bbox[3] + 10) # pads.
 
     # draws the text, then crops it out according to its bbox.
-    text_draw.text((200, 200), text, font=_FONT, fill=TEXT_RGB)
+    text_draw.text((200, 200), text, font=_FONT, fill=rgb_fill)
     text_image = text_image.crop(bbox)
     w, h = text_image.size
     
@@ -153,6 +172,6 @@ def create_text_image(text: str):
     width_px = height_px * ratio
 
     return text_image.resize(
-        (round(width_px), round(height_px)),
+        (int(width_px), int(height_px)),
         Image.Resampling.LANCZOS,
     )

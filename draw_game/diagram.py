@@ -40,7 +40,7 @@ def calc_stone_size(diagram_width_in):
     stone_size_in = diagram_width_in / cells_wide
     stone_size_px = stone_size_in * DPI
 
-    return stone_size_px
+    return int(stone_size_px)
 
 
 def make_diagram(
@@ -48,12 +48,14 @@ def make_diagram(
     problem_num: int,
     diagram_width_in,
     color_to_play: str="default",
-    random_flip_xy: bool=True,
-    random_flip_x: bool=True,
-    random_flip_y: bool=True,
+    flip_xy: bool=True,
+    flip_x: bool=True,
+    flip_y: bool=True,
     include_text: bool=True,
     placement_method: str="block",
     force_color_to_play: bool=False,
+    create_key: bool=False,
+    text_rgb: tuple=(128, 128, 128),
 ):
     """
     Returns a PIL Image of a Life and Death diagram for the desired problem.
@@ -73,16 +75,18 @@ def make_diagram(
             - "black": forces the player to move to be black.
             - "white": forces the player to move to be white.
             - "random": forces the player to move to be random.
-        random_flip_xy (bool): if True, problem can have its X/Y axes flipped.
-        random_flip_x (bool): if True, problem can be flipped across X-axis.
-        random_flip_y (bool): if True, problem can be flipped across Y-axis.
+        flip_xy (bool): if True, problem has its X/Y axes flipped.
+        flip_x (bool): if True, problem is flipped across X-axis.
+        flip_y (bool): if True, problem is flipped across Y-axis.
         include_text (bool): if True, a problem label 
                              will be added to the diagram.
         placement_method (str): the method used to place diagrams:
             - "none": places diagrams without regarding any alignment.
             - "block": diagrams are placed to have 
                        stone lines match up across columns.
-
+        force_color_to_play (bool): if True, the label "black/white to play"
+                                    is shown no matter what.
+        create_key (bool): if True, the problem solution(s) is/are marked.
     """
     
     # determine the stone size.
@@ -93,13 +97,6 @@ def make_diagram(
     if color_to_play == "random":
         random_color = True
         color_to_play = random.choice(["black", "white"])
-
-
-
-    # determines how this puzzle will be randomly flipped.
-    flip_xy = random.choice([True, False]) if random_flip_xy else False
-    flip_x = random.choice([True, False]) if random_flip_x else False
-    flip_y = random.choice([True, False]) if random_flip_y else False
 
     # draws a full board.
     full_board_width_in = (stone_size_px * 19) / DPI
@@ -137,7 +134,6 @@ def make_diagram(
     for y, line in enumerate(lines):
         for x, c in enumerate(line):
             if c == "@": # black stone.
-
                 draw_stone(board, x, y, stone_size_px, is_black=not invert_colors)
                 max_x = max(max_x, x)
                 max_y = max(max_y, y)
@@ -145,6 +141,8 @@ def make_diagram(
                 draw_stone(board, x, y, stone_size_px, is_black=invert_colors)
                 max_x = max(max_x, x)
                 max_y = max(max_y, y)
+            elif create_key and c == "X": # solution.
+                draw_mark(board, x, y, stone_size_px, is_black=not invert_colors)
 
     # flipping the X and Y axes is forbidden/enforced depending on
     # the bbox attributes.
@@ -162,7 +160,7 @@ def make_diagram(
         # because it's too visually jarring.
         flip_xy = False
     
-    # flips the puzzle around randomly.
+    # flips the puzzle aint randomly.
     if flip_xy:
         board = board.transpose(Image.TRANSPOSE)
     if flip_x:
@@ -214,7 +212,7 @@ def make_diagram(
         text_str = f"problem {problem_num}"
         if state_color_to_play:
             text_str += ", " + (color_to_play if color_to_play != "default" else default_to_play) + " to play"
-        text_image = create_text_image(text_str)
+        text_image = create_text_image(text_str, text_rgb)
 
 
         # adds the text image if specified.
@@ -224,15 +222,15 @@ def make_diagram(
         # determines spacing below.
         additional_height = text_image.size[1] + TEXT_PADDING_TOP + TEXT_PADDING_BOTTOM
         if placement_method == "block":
-            additional_height = round(stone_size_px * (int(additional_height / stone_size_px) + 1))
+            additional_height = int(stone_size_px * (int(additional_height / stone_size_px) + 1))
 
         w, h = board.size
-        additional_height = round(text_image.size[1] + TEXT_PADDING_TOP + TEXT_PADDING_BOTTOM)
+        additional_height = int(text_image.size[1] + TEXT_PADDING_TOP + TEXT_PADDING_BOTTOM)
         new_image = Image.new("RGB", (w, h + additional_height), (255, 255, 255))
         new_image.paste(board, (0, 0))
 
-        text_x = round(w/2 - text_image.size[0]/2)
-        new_image.paste(text_image, (text_x, round(h + TEXT_PADDING_TOP)))
+        text_x = int(w/2 - text_image.size[0]/2)
+        new_image.paste(text_image, (text_x, int(h + TEXT_PADDING_TOP)))
 
         board = new_image
 
