@@ -2,7 +2,9 @@ import json
 import os
 
 def _flip_text_horizontally(problem_str: str):
-    """ Returns the problem string with its stones flipped across the Y-axis. """
+    """ 
+    Returns the problem string with its stones flipped across the Y-axis.
+    """
     lines = problem_str.split(" ")
     result = ""
     for i, raw_line in enumerate(lines):
@@ -21,14 +23,14 @@ def _flip_text_horizontally(problem_str: str):
 
     return result
 
+GOKYO_SHUMYO_SECTIONS = {
+    1: "living", 2: "killing", 3: "ko", 4: "capturing-race",
+    5: "oiotoshi", 6: "connecting", 7: "various",
+}
 
 def read_problems_from_file(file_name: str):
     """ Returns a dict with a string for each Go puzzle. """
-    GOKYO_SHUMYO_SECTIONS = {
-        1: "living", 2: "killing", 3: "ko", 4: "capturing-race",
-        5: "oiotoshi", 6: "connecting", 7: "various",
-    }
-
+    
     problem_num = None
     current_problem_str = ""
     problem_identified = False
@@ -70,7 +72,9 @@ def read_problems_from_file(file_name: str):
                         problems[section_name] = {}
 
                     color_label = "B" if black_to_play else "W"
-                    problems[section_name][problem_num] = color_label + current_problem_str.strip()
+                    problems[section_name][problem_num] = (
+                        color_label + current_problem_str.strip()
+                    )
                 
                 else:
                     # this problem is from a different collection.
@@ -81,7 +85,8 @@ def read_problems_from_file(file_name: str):
                     color_label = "B" if black_to_play else "W"
                     problem_str = current_problem_str.strip()
                     if "igo-hatsuyoron" in file_name:
-                        # the problems in the Hatsuyoron are oriented in the top-right,
+                        # the problems in the Hatsuyoron 
+                        # are oriented in the top-right,
                         # so they're flipped to match the rest of the data.
                         problem_str = _flip_text_horizontally(problem_str)
 

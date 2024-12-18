@@ -9,12 +9,16 @@ STAR_POINT_RADIUS_IN = 1/48
 
 TEXT_PADDING_TOP_IN = 0.0625
 TEXT_PADDING_BOTTOM_IN = 0
+BOARD_PADDING_PX = 2
 
 def draw_board(width_in):
     """ Returns a drawn Go board."""
     line_width = max(1, int(LINE_WIDTH_IN * DPI))
 
-    width, height = int(width_in * DPI), int(width_in * DPI)
+    OFF = BOARD_PADDING_PX
+
+    width = int(width_in * DPI) + OFF*2
+    height = int(width_in * DPI) + OFF*2
     image = Image.new("RGB", (width, height), "white")
 
     # draws lines.
@@ -27,8 +31,8 @@ def draw_board(width_in):
         draw_x = int(cell_size_px/2 + x*cell_size_px)
         y0 = int(cell_size_px/2)
         y1 = int(y0 + 18*cell_size_px)
-        a = (draw_x, y0 - line_width//2 + 1)
-        b = (draw_x, y1 + line_width//2 - 1)
+        a = (draw_x + OFF, y0 + OFF - line_width//2 + 1)
+        b = (draw_x + OFF, y1 + OFF + line_width//2 - 1)
         draw.line([a, b], fill=LINE_COLOR, width=line_width)
 
     # draws the horizontal lines.
@@ -36,16 +40,16 @@ def draw_board(width_in):
         draw_y = int(cell_size_px/2 + y*cell_size_px)
         x0 = int(cell_size_px/2)
         x1 = int(x0 + 18*cell_size_px)
-        a = (x0 - line_width//2 + 1, draw_y)
-        b = (x1 + line_width//2 - 1, draw_y)
+        a = (OFF + x0 - line_width//2 + 1, draw_y + OFF)
+        b = (OFF + x1 + line_width//2 - 1, draw_y + OFF)
         draw.line([a, b], fill=LINE_COLOR, width=line_width)
 
     # draws the star points.
     radius_px = int(STAR_POINT_RADIUS_IN * DPI)
     STAR_POINTS = [(x, y) for x in [3, 9, 15] for y in [3, 9, 15]]
     for p in STAR_POINTS:
-        x = int(cell_size_px/2 + p[0]*cell_size_px)
-        y = int(cell_size_px/2 + p[1]*cell_size_px)
+        x = int(cell_size_px/2 + p[0]*cell_size_px) + OFF
+        y = int(cell_size_px/2 + p[1]*cell_size_px) + OFF
         bbox = (
             x - radius_px,
             y - radius_px,
@@ -123,8 +127,9 @@ def draw_stone(board, x, y, stone_size_px, is_black: bool):
         _BLACK_STONE_IMAGE = _create_stone_graphic(stone_size_px, is_black=True)
         _WHITE_STONE_IMAGE = _create_stone_graphic(stone_size_px, is_black=False)
 
-    draw_x = int(x * stone_size_px) - _GRAPHIC_PADDING_PX
-    draw_y = int(y * stone_size_px) - _GRAPHIC_PADDING_PX
+    OFF = BOARD_PADDING_PX
+    draw_x = int(x * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
+    draw_y = int(y * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
     img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
     board.paste(img, (draw_x, draw_y), mask=img)
 
@@ -137,8 +142,9 @@ def draw_mark(board, x, y, stone_size_px, is_black):
         _SOLUTION_BLACK_IMAGE = _load_mark_image(stone_size_px, is_black=True)
         _SOLUTION_WHITE_IMAGE = _load_mark_image(stone_size_px, is_black=False)
 
-    draw_x = int(x * stone_size_px)
-    draw_y = int(y * stone_size_px)
+    OFF = BOARD_PADDING_PX
+    draw_x = int(x * stone_size_px) + OFF
+    draw_y = int(y * stone_size_px) + OFF
     img = _SOLUTION_BLACK_IMAGE if is_black else _SOLUTION_WHITE_IMAGE
     board.paste(img, (draw_x, draw_y), mask=img)
 
