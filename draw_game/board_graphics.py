@@ -7,7 +7,6 @@ LINE_WIDTH_IN = 1/96
 LINE_COLOR = (128, 128, 128)
 STAR_POINT_RADIUS_IN = 1/48
 
-TEXT_HEIGHT_IN = 0.21
 TEXT_PADDING_TOP_IN = 0.0625
 TEXT_PADDING_BOTTOM_IN = 0
 
@@ -145,7 +144,7 @@ def draw_mark(board, x, y, stone_size_px, is_black):
 
 
 _FONT = None
-def create_text_image(text: str, rgb_fill: tuple):
+def create_text_image(text: str, rgb_fill: tuple, text_height_in=0.21):
     """ Returns an image with text drawn inside. """
     # loads font if it hasn't been done yet.
     global _FONT
@@ -167,7 +166,7 @@ def create_text_image(text: str, rgb_fill: tuple):
     w, h = text_image.size
     
     # scales the text down.
-    height_px = TEXT_HEIGHT_IN * DPI
+    height_px = text_height_in * DPI
     ratio = w / h
     width_px = height_px * ratio
 

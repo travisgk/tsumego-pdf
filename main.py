@@ -1,17 +1,14 @@
 import random
 from PIL import Image, ImageDraw
 import reportlab.lib.pagesizes
-from draw_game.diagram import DPI, get_problems, calc_stone_size, make_diagram
+from draw_game.diagram import *
 from create_pdf import png_to_pdf
 
-MARGIN_LEFT_IN = 0.5
-MARGIN_TOP_IN = 0.5
-MARGIN_RIGHT_IN = 0.5
-MARGIN_BOTTOM_IN = 0.5
 
 def create_pages(
     page_size,
     collection,
+    margin_in=(0.5, 0.5, 0.5, 0.5),
     problem_nums=None,
     color_to_play: str="black",
     random_flip_xy: bool=True,
@@ -26,11 +23,16 @@ def create_pages(
     create_key: bool=True,
     text_rgb: tuple=(128, 128, 128),
     solution_text_rgb: tuple=(128, 128, 128),
+    include_page_num: bool=True,
 ):
     """
     Parameters:
+        margin_in: left, top, right, bottom
         color_to_play (str): "default", "black", "white" or "random".
     """
+    PAGE_NUM_TEXT_SIZE_IN = 0.125
+    PAGE_NUM_RGB = (128, 128, 128)
+
     if create_key:
         include_text = True
 
@@ -54,14 +56,14 @@ def create_pages(
     w, h = w_in * DPI, h_in * DPI
 
     # calculates margins.
-    m_l, m_t = MARGIN_LEFT_IN * DPI, MARGIN_TOP_IN * DPI
-    m_r, m_b = MARGIN_RIGHT_IN * DPI, MARGIN_BOTTOM_IN * DPI
+    m_l, m_t = margin_in[0] * DPI, margin_in[1] * DPI
+    m_r, m_b = margin_in[2] * DPI, margin_in[3] * DPI
 
     colspan = column_spacing_in * DPI
     spacing_below = spacing_below_in * DPI
     
     col_width_in = (
-        w_in - MARGIN_LEFT_IN - MARGIN_RIGHT_IN 
+        w_in - margin_in[0] - margin_in[2] 
         - column_spacing_in*(num_columns-1)
     ) / num_columns
     col_width = col_width_in * DPI
@@ -82,8 +84,24 @@ def create_pages(
     current_col = 0
     current_y = m_t
 
+    if include_page_num:
+        page_num = create_text_image(
+            str(len(pages) + 1), PAGE_NUM_RGB, PAGE_NUM_TEXT_SIZE_IN
+        )
+        m_b += page_num.size[1]
+
     page = Image.new("RGB", (int(w), int(h)), (255, 255, 255))
     key_page = Image.new("RGB", (int(w), int(h)), (255, 255, 255)) if create_key else None
+
+    if include_page_num:
+        page_num = create_text_image(
+            str(len(pages) + 1), PAGE_NUM_RGB, PAGE_NUM_TEXT_SIZE_IN
+        )
+        print_x = int(page.size[0]/2 - page_num.size[0]/2)
+        print_y = int(h - m_b)
+        page.paste(page_num, (print_x, print_y))
+        if create_key:
+            key_page.paste(page_num, (print_x, print_y))
 
     for problem_num in problem_nums:
         # determines how this puzzle will be randomly flipped.
@@ -138,8 +156,19 @@ def create_pages(
                 # ---
                 # next page
                 page = Image.new("RGB", (int(w), int(h)), (255, 255, 255))
+
                 if create_key:
                     key_page = Image.new("RGB", (int(w), int(h)), (255, 255, 255))
+
+                if include_page_num:
+                    page_num = create_text_image(
+                        str(len(pages) + 1), PAGE_NUM_RGB, PAGE_NUM_TEXT_SIZE_IN
+                    )
+                    print_x = int(page.size[0]/2 - page_num.size[0]/2)
+                    print_y = int(h - m_b)
+                    page.paste(page_num, (print_x, print_y))
+                    if create_key:
+                        key_page.paste(page_num, (print_x, print_y))
 
                 current_col = 0
 
@@ -156,6 +185,7 @@ def create_pages(
     pages.append(page)
     if create_key:
         key_pages.append(key_page)
+
     return pages, key_pages
 
 
@@ -169,11 +199,13 @@ def main():
     - "xuanxuan-qijing"
     - "igo-hatsuyoron"
     """
+    my_problems = [17, 30, 38, 43, 45, 50, 54, 55, 60, 64, 65, 66, 67, 75, 76, 78, 80, 96, 97, 101, 104, 107, 124, 125, 126, 127, 141, 172, 174, 177, 179, 180, 187, 189, 190, 193, 203]
+    random.shuffle(my_problems)
 
     pages, key_pages = create_pages(
         page_size,
         "cho-elementary",
-        problem_nums=[17, 30, 38, 43, 45, 50, 54, 55, 60, 64, 65, 66, 67, 75, 76, 78, 80, 96, 97, 101, 104, 107, 124, 125, 126, 127, 141, 172, 174, 177, 179, 180, 187, 189, 190, 193, 203],
+        problem_nums=my_problems,
         num_columns=2,
         landscape=False,
         placement_method="block",
@@ -183,6 +215,7 @@ def main():
         color_to_play="black",
         text_rgb=(255, 255, 255),
         solution_text_rgb=(128, 128, 128),
+        include_page_num=True,
     )
 
     png_to_pdf(pages, "pages.pdf", page_size, landscape=False)
