@@ -1,6 +1,6 @@
 # tsumego-pdf
 This tool generates a PDF of selected problems from any of the following tsumego selections collections:
-  - *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary*
+  - *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* (Solutions Available)
   - *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate*
   - *Cho Chikun's Encyclopedia of Life &amp; Death: Advanced*
   - *Goyko Shumyo*
