@@ -11,12 +11,12 @@ This tool generates a PDF of selected problems from any of the following tsumego
 ![Tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/outputs.png?raw=true)
 The problems can be set to be flipped around randomly, as well as setting the color to play.<br>This program will also by default create a parallel PDF which will contain the answers to the selected problems (if solutions are available for the collection).
 
-See the above output in full in the [the example PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego.pdf) and its corresponding [answers PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego-key.pdf)
+See the above output in full in the [the example PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego.pdf) and its corresponding [answers PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego-key.pdf).
 
 <br>
 
 ## Usage
-The following code selects various problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided.
+The following code selects various problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided, creating the example seen above.
 
 ```
 import random
