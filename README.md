@@ -7,6 +7,8 @@ This tool generates a PDF of selected problems from any of the following tsumego
   - *Xuanxuan Qijing*
   - *Igo Hatsuyo-ron*
 <br>
+
+![Tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/outputs.png?raw=true)
 The problems can be set to be flipped around randomly, as well as setting the color to play. This program will also by default create a parallel PDF which will contain the answers to the selected problems (if solutions are available for the collection).
 
 <br>
