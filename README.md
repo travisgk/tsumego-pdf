@@ -30,30 +30,35 @@ You will need Pillow and ReportLab to run this program.
 <br>
 
 ## Usage
-The following code selects various problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided, creating the example seen above.
+The following code selects 100 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and 100 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate*, mixes them all together, and then saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided.
+
+This provides [a PDF with the tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/random-200-mix.pdf) and [a companion PDF with the solutions](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/random-200-mix-key.pdf).
 
 ```
 import random
 import reportlab.lib.pagesizes
 import tsumego_pdf
 
-page_size = reportlab.lib.pagesizes.letter  # American paper size.
-collection_name = "cho-elementary"
+problem_selections = []
 
-my_problems = [
-    17, 30, 38, 43, 45,
-    50, 54, 55, 60, 64,
-    65, 66, 67, 75, 76,
-    78, 80, 96, 97, 101,
-]
-random.shuffle(my_problems)
+# adds 100 random problems from Cho's Elementary Life & Death.
+collection_name = "cho-elementary"
+problem_nums = random.sample(range(1, 901), 100)
+problem_selections.extend([(num, "cho-elementary") for num in problem_nums])
+
+# adds 100 random problems from Cho's Intermediate Life & Death.
+collection_name = "cho-intermediate"
+problem_nums = random.sample(range(1, 861), 100)
+problem_selections.extend([(num, "cho-intermediate") for num in problem_nums])
+
+# shuffles all the selections.
+random.shuffle(problem_selections)
 
 tsumego_pdf.create_pdf(
-    collection_name,
+    problem_selections,
     page_size,
-    problems_out_path="tsumego.pdf",
-    solutions_out_path="tsumego-key.pdf",
-    problem_nums=my_problems,
+    problems_out_path="random-200-mix.pdf",
+    solutions_out_path="random-200-mix-key.pdf",
     color_to_play="black",
     landscape=False,
     num_columns=2,
