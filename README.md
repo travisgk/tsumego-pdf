@@ -61,6 +61,7 @@ create_pdf(
 )
 ```
 
+Setting `problem_nums` to `None` will select all problems in the desired collection.
 <br>
 
 ## Notes
