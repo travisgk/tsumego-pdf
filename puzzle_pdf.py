@@ -1,8 +1,7 @@
-import numpy as np
-import sys
-import tempfile
 from datetime import datetime
 import os
+import sys
+import tempfile
 from PIL import Image, ImageDraw
 import reportlab.lib.pagesizes
 from reportlab.pdfgen import canvas
@@ -228,7 +227,6 @@ def create_pdf(
     temp_paths = []
 
     def write_page_to_pdf(page, pdf, show_page: bool = True):
-        num = np.random.randint(10000000, 99999999)
         with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
             temp_path = temp_file.name
         page.save(temp_path)
@@ -355,7 +353,7 @@ def create_pdf(
         if create_key:
             print(
                 "A collection of tsumego and its key have been saved to "
-                f"{problems_out_path} and {solutions_out_path}."
+                f"{problems_out_path} and {solutions_out_path}.\n"
             )
         else:
             print(f"Tsumego has been saved to {problems_out_path}.\n")
