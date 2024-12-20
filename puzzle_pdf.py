@@ -117,6 +117,20 @@ def create_pdf(
     PAGE_NUM_TEXT_SIZE_IN = 0.125
     PAGE_NUM_RGB = (128, 128, 128)
 
+    """
+    Step 0) Generates problem numbers/tuples for all the problems.
+    """
+    if problem_nums is None:
+        if "gokyo-shumyo" in collection_name:
+            problem_nums = []
+            for section_name in GOKYO_SHUMYO_SECTIONS.values():
+                num_problems = len(get_problems()[collection_name][section_name])
+                for i in range(1, num_problems + 1):
+                    problem_nums.append((i, section_name))
+        else:
+            num_problems = len(get_problems()[collection_name])
+            problem_nums = [i for i in range(1, num_problems + 1)]
+    
     num_diagrams_made = 0
     total_diagrams = len(problem_nums)
 
@@ -184,20 +198,7 @@ def create_pdf(
     col_width = col_width_in * DPI
     col_x = [int(m_l + i * (col_width + colspan)) for i in range(num_columns)]
 
-    # generates problem numbers/tuples for all the problems.
-    if problem_nums is None:
-        if "gokyo-shumyo" in collection_name:
-            problem_nums = []
-            for section_name in GOKYO_SHUMYO_SECTIONS.values():
-                num_problems = len(get_problems()[collection_name][section_name])
-                for i in range(1, num_problems + 1):
-                    problem_nums.append((i, section_name))
-        else:
-            num_problems = len(get_problems()[collection_name])
-            problem_nums = [i for i in range(1, num_problems + 1)]
-
     num_pages = 0
-
     current_col = 0
     current_y = m_t
 
