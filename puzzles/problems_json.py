@@ -1,8 +1,9 @@
 import json
 import os
 
+
 def _flip_text_horizontally(problem_str: str):
-    """ 
+    """
     Returns the problem string with its stones flipped across the Y-axis.
     """
     lines = problem_str.split(" ")
@@ -23,14 +24,21 @@ def _flip_text_horizontally(problem_str: str):
 
     return result
 
+
 GOKYO_SHUMYO_SECTIONS = {
-    1: "living", 2: "killing", 3: "ko", 4: "capturing-race",
-    5: "oiotoshi", 6: "connecting", 7: "various",
+    1: "living",
+    2: "killing",
+    3: "ko",
+    4: "capturing-race",
+    5: "oiotoshi",
+    6: "connecting",
+    7: "various",
 }
 
+
 def read_problems_from_file(file_name: str):
-    """ Returns a dict with a string for each Go puzzle. """
-    
+    """Returns a dict with a string for each Go puzzle."""
+
     problem_num = None
     current_problem_str = ""
     problem_identified = False
@@ -53,18 +61,18 @@ def read_problems_from_file(file_name: str):
 
             elif clean_line.startswith("problem"):
                 # this line of the file provides information about the problem.
-                if "cho" in file_name: 
+                if "cho" in file_name:
                     # this problem is from a Cho collection.
-                    problem_num = int(clean_line[len("problem "):])
+                    problem_num = int(clean_line[len("problem ") :])
                     problems[problem_num] = "B" + current_problem_str.strip()
 
-                elif "gokyo-shumyo" in file_name: 
+                elif "gokyo-shumyo" in file_name:
                     # this problem is from the Gokyo Shumyo.
                     hyphen_index = clean_line.find("-")
                     comma_index = clean_line.find(",")
-                    
-                    section_num = int(clean_line[len("problem "):hyphen_index])
-                    problem_num = int(clean_line[hyphen_index+1:comma_index])
+
+                    section_num = int(clean_line[len("problem ") : hyphen_index])
+                    problem_num = int(clean_line[hyphen_index + 1 : comma_index])
                     black_to_play = "black" in clean_line
 
                     section_name = GOKYO_SHUMYO_SECTIONS[section_num]
@@ -75,17 +83,17 @@ def read_problems_from_file(file_name: str):
                     problems[section_name][problem_num] = (
                         color_label + current_problem_str.strip()
                     )
-                
+
                 else:
                     # this problem is from a different collection.
                     comma_index = clean_line.find(",")
-                    problem_num = int(clean_line[len("problem "):comma_index])
+                    problem_num = int(clean_line[len("problem ") : comma_index])
                     black_to_play = "black" in clean_line
 
                     color_label = "B" if black_to_play else "W"
                     problem_str = current_problem_str.strip()
                     if "igo-hatsuyoron" in file_name:
-                        # the problems in the Hatsuyoron 
+                        # the problems in the Hatsuyoron
                         # are oriented in the top-right,
                         # so they're flipped to match the rest of the data.
                         problem_str = _flip_text_horizontally(problem_str)
@@ -111,8 +119,10 @@ def create_problems_json(out_path: str):
         "cho-advanced": read_problems_from_file("cho-advanced.txt"),
         "gokyo-shumyo": read_problems_from_file("gokyo-shumyo.txt"),
         "xuanxuan-qijing": read_problems_from_file("xuanxuan-qijing.txt"),
-        "igo-hatsuyoron": read_problems_from_file("igo-hatsuyoron.txt"), # on right
+        "igo-hatsuyoron": read_problems_from_file("igo-hatsuyoron.txt"),  # on right
     }
 
     with open(out_path, "w") as json_file:
-        json.dump(problems, json_file, indent=4)  # 'indent' makes the file more readable
+        json.dump(
+            problems, json_file, indent=4
+        )  # 'indent' makes the file more readable
