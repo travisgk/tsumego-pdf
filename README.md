@@ -15,6 +15,14 @@ See the above output in full in the [the example PDF](https://github.com/travisg
 
 <br>
 
+### "Why wouldn't I just solve these Go puzzles on my computer?"
+- The lack of instant feedback helps you improve visualization skills and simulates actual gameplay.
+- It discourages finding answers by trial-and-error.
+- Paper and a slower pace builds deep focus and can be a more relaxing experience.
+- It provides you a healthy break from digital devices.
+- Solving on paper reinforces the idea that you can solve problems on your own, boosting your self-reliance in the game.
+<br>
+
 ## Setup
 You will need Pillow and ReportLab to run this program.
 `pip install pillow reportlab`
