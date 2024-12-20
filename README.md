@@ -27,7 +27,7 @@ The following code selects various problems from *Cho Chikun's Encyclopedia of L
 ```
 import random
 import reportlab.lib.pagesizes
-from puzzle_pdf import create_pdf
+import tsumego_pdf
 
 page_size = reportlab.lib.pagesizes.letter  # American paper size.
 collection_name = "cho-elementary"
@@ -40,7 +40,7 @@ my_problems = [
 ]
 random.shuffle(my_problems)
 
-create_pdf(
+tsumego_pdf.create_pdf(
     collection_name,
     page_size,
     problems_out_path="tsumego.pdf",
