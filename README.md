@@ -16,7 +16,7 @@ See the above output in full in the [the example PDF](https://github.com/travisg
 <br>
 
 ## Usage
-This selects various problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and saves one PDF with invisible labels and another PDF with the problems labelled and solutions provided.
+The following code selects various problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided.
 
 ```
 import random
