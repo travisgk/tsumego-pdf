@@ -41,6 +41,7 @@ def main():
         65, 66, 67, 75, 76,
         78, 80, 96, 97, 101,
     ]
+    random.shuffle(my_problems)
 
     tsumego_pdf.create_pdf(
         collection_name,
