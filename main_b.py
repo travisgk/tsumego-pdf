@@ -32,23 +32,22 @@ def main():
     collection_name = "gokyo-shumyo"
 
     # this collection has subsections, so those must be specified.
-    my_problems = []
-    my_problems.extend([(i, "living") for i in range(1, 104)])
-    my_problems.extend([(i, "killing") for i in range(1, 72)])
-    my_problems.extend([(i, "ko") for i in range(1, 91)])
-    my_problems.extend([(i, "capturing-race") for i in range(1, 97)])
-    my_problems.extend([(i, "oiotoshi") for i in range(1, 41)])
-    my_problems.extend([(i, "connecting") for i in range(1, 75)])
-    my_problems.extend([(i, "various") for i in range(1, 47)])
+    selections = []
+    selections.extend([(i, collection_name, "living") for i in range(1, 104)])
+    selections.extend([(i, collection_name, "killing") for i in range(1, 72)])
+    selections.extend([(i, collection_name, "ko") for i in range(1, 91)])
+    selections.extend([(i, collection_name, "capturing-race") for i in range(1, 97)])
+    selections.extend([(i, collection_name, "oiotoshi") for i in range(1, 41)])
+    selections.extend([(i, collection_name, "connecting") for i in range(1, 75)])
+    selections.extend([(i, collection_name, "various") for i in range(1, 47)])
 
     # randomizes the problems.
-    random.shuffle(my_problems)
+    random.shuffle(selections)
 
     tsumego_pdf.create_pdf(
-        collection_name,
+        selections,
         page_size,
         problems_out_path="gokyo.pdf",
-        problem_nums=my_problems,
         color_to_play="white",
         landscape=False,
         num_columns=3,

@@ -2,7 +2,10 @@ import json
 import os
 import random
 from PIL import Image, ImageDraw
-from tsumego_pdf.puzzles.problems_json import GOKYO_SHUMYO_SECTIONS, create_problems_json
+from tsumego_pdf.puzzles.problems_json import (
+    GOKYO_SHUMYO_SECTIONS,
+    create_problems_json,
+)
 from .board_graphics import *
 
 _PROBLEMS = None
@@ -43,9 +46,10 @@ def calc_stone_size(diagram_width_in, display_width):
 
 
 def make_diagram(
-    collection: str,
-    problem_num,
     diagram_width_in,
+    problem_num: int,
+    collection_name: str,
+    section_name: str = None,
     color_to_play: str = "default",
     flip_xy: bool = True,
     flip_x: bool = True,
@@ -57,22 +61,24 @@ def make_diagram(
     text_rgb: tuple = (128, 128, 128),
     text_height_in=0.2,
     display_width: int = 12,
+    write_collection_label: bool = False,
 ):
     """
     Returns a PIL Image of a Life and Death diagram for the desired problem.
 
     Parameters:
-        collection (str): the name of the collection to use.
+        diagram_width_in (num): the output diagram width in inches.
+        problem_num (int): the problem number.
+        collection_name (str): the name of the collection to use.
             - "cho-elementary"
             - "cho-intermediate"
             - "cho-advanced"
             - "gokyo-shumyo"
             - "xuanxuan-qijing"
             - "igo-hatsuyoron"
-        problem_num: the problem number (int),
-                     or a tuple with the problem number
-                     and the section name (tuple(int, str)).
-        diagram_width_in (num): the output diagram width in inches.
+        section_name (str): the name of the section to use.
+                            for any collection other than the Gokyo Shumyo
+                            this will be None.
         color_to_play (str):
             - "default": keeps stone colors as they are in the original data.
             - "black": forces the player to move to be black.
@@ -90,6 +96,7 @@ def make_diagram(
         text_height_in (num): the height of the label text.
         display_width (int): the maximum width of the board displayed.
                              12 is a good value for Cho's problems.
+        write_collection_label (bool): if True, the collection name is shown.
     """
 
     """
@@ -114,8 +121,8 @@ def make_diagram(
     # loads the problems if not yet done, then selects the problem.
     _load_problems()
 
-    collection = collection.lower()
-    problem_collection = _PROBLEMS.get(collection)
+    collection_name = collection_name.lower()
+    problem_collection = _PROBLEMS.get(collection_name)
     if problem_collection is None:
         print(
             f"'{collection}'' is not an available collection. "
@@ -126,14 +133,12 @@ def make_diagram(
 
         return None
 
-    section_name = None
-    if "gokyo-shumyo" in collection:
+    if section_name is not None:
         # the section name must be considered.
-        problem_num, section_name = problem_num
         section = problem_collection.get(section_name)
         if section is None:
             print(
-                f"The collection '{collection}' does not have "
+                f"The collection '{collection_name}' does not have "
                 f"a section named {section_name}."
             )
             return None
@@ -141,7 +146,7 @@ def make_diagram(
         lines = section.get(str(problem_num))
         if lines is None:
             print(
-                f"The section '{section_name}' of {collection} "
+                f"The section '{section_name}' of {collection_name} "
                 f"does not have a problem numbered #{problem_num}."
             )
             return None
@@ -150,14 +155,14 @@ def make_diagram(
         lines = problem_collection.get(str(problem_num))
         if lines is None:
             print(
-                f"The collection '{collection}' does not have "
+                f"The collection '{collection_name}' does not have "
                 f"a problem numbered #{problem_num}."
             )
             return None
 
     lines = lines.split(" ")
     default_to_play = "black" if lines[0][0] == "B" else "white"
-    lines[0] = lines[0][1:]
+    lines[0] = lines[0][1:]  # snips off the color-to-play info.
 
     """
     Step 3) Draws stones and determines the bounding box of the stones.
@@ -261,12 +266,12 @@ def make_diagram(
             or random_color
             or (
                 color_to_play == "default"
-                and any(term in collection for term in MULTICOLOR_COLLECTIONS)
+                and any(term in collection_name for term in MULTICOLOR_COLLECTIONS)
             )
         )
 
         # the text to be displayed is determined.
-        if "gokyo-shumyo" in collection:
+        if "gokyo-shumyo" in collection_name:
             reverse_dict = {value: key for key, value in GOKYO_SHUMYO_SECTIONS.items()}
             section_num = reverse_dict[section_name]
             text_str = f"problem {section_num}-{problem_num}"
@@ -280,14 +285,36 @@ def make_diagram(
                 color_str = color_to_play
             text_str += f", {color_to_play} to play"
 
-        text_image = create_text_image(text_str, text_rgb, text_height_in)
+        label_str = None
+        if write_collection_label:
+            LABELS = {
+                "cho-elementary": "Cho's Elementary",
+                "cho-intermediate": "Cho's Intermediate",
+                "cho-advanced": "Cho's Advanced",
+                "gokyo-shumyo": "Gokyo Shumyo",
+                "xuanxuan-qijing": "Xuanxuan Qijing",
+                "igo-hatsuyoron": "Igo Hatsuyōron",
+            }
+            label_str = LABELS[collection_name]
 
         TEXT_PADDING_TOP = TEXT_PADDING_TOP_IN * DPI
         TEXT_PADDING_BOTTOM = TEXT_PADDING_BOTTOM_IN * DPI
 
-        additional_height = int(
-            text_image.size[1] + TEXT_PADDING_TOP + TEXT_PADDING_BOTTOM
-        )
+        if label_str is None:
+            label_image = None
+            text_image = create_text_image(text_str, text_rgb, text_height_in)
+            additional_height = int(
+                text_image.size[1] + TEXT_PADDING_TOP + TEXT_PADDING_BOTTOM
+            )
+        else:
+            label_image = create_text_image(label_str, text_rgb, text_height_in / 2)
+            text_image = create_text_image(text_str, text_rgb, text_height_in / 2)
+            additional_height = int(
+                label_image.size[1]
+                + text_image.size[1]
+                + TEXT_PADDING_TOP
+                + TEXT_PADDING_BOTTOM
+            )
 
         """
         Step 6) Combines the diagram and label as one image.
@@ -296,8 +323,17 @@ def make_diagram(
         new_image = Image.new("RGB", (w, h + additional_height), (255, 255, 255))
         new_image.paste(board, (0, 0))
 
-        text_x = int(w / 2 - text_image.size[0] / 2)
-        new_image.paste(text_image, (text_x, int(h + TEXT_PADDING_TOP)))
+        if label_str is None:
+            text_x = int(w / 2 - text_image.size[0] / 2)
+            new_image.paste(text_image, (text_x, int(h + TEXT_PADDING_TOP)))
+        else:
+            label_x = int(w / 2 - label_image.size[0] / 2)
+            new_image.paste(label_image, (label_x, int(h + TEXT_PADDING_TOP)))
+
+            text_x = int(w / 2 - text_image.size[0] / 2)
+            new_image.paste(
+                text_image, (text_x, int(h + TEXT_PADDING_TOP + label_image.size[1]))
+            )
 
         board = new_image
 

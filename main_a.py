@@ -34,21 +34,19 @@ def main():
     """
 
     collection_name = "cho-elementary"
-
-    my_problems = [
+    problem_nums = [
         17, 30, 38, 43, 45,
         50, 54, 55, 60, 64,
         65, 66, 67, 75, 76,
         78, 80, 96, 97, 101,
     ]
-    random.shuffle(my_problems)
+    problem_selections = [(num, collection_name) for num in problem_nums]
 
     tsumego_pdf.create_pdf(
-        collection_name,
+        problem_selections,
         page_size,
         problems_out_path="tsumego.pdf",
         solutions_out_path="tsumego-key.pdf",
-        problem_nums=my_problems,
         color_to_play="black",
         landscape=False,
         num_columns=2,
