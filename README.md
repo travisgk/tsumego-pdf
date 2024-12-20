@@ -15,6 +15,12 @@ See the above output in full in the [the example PDF](https://github.com/travisg
 
 <br>
 
+## Setup
+You will need Pillow and ReportLab to run this program.
+`pip install pillow reportlab`
+
+<br>
+
 ## Usage
 The following code selects various problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided, creating the example seen above.
 
