@@ -10,7 +10,7 @@ which contains possible solutions.
 
 import random
 import reportlab.lib.pagesizes
-from puzzle_pdf import create_pdf
+import tsumego_pdf
 
 
 def main():
@@ -41,9 +41,8 @@ def main():
         65, 66, 67, 75, 76,
         78, 80, 96, 97, 101,
     ]
-    random.shuffle(my_problems)
 
-    create_pdf(
+    tsumego_pdf.create_pdf(
         collection_name,
         page_size,
         problems_out_path="tsumego.pdf",

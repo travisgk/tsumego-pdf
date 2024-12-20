@@ -6,7 +6,7 @@ where white is always the color to play.
 
 import random
 import reportlab.lib.pagesizes
-from puzzle_pdf import create_pdf
+import tsumego_pdf
 
 
 def main():
@@ -40,9 +40,11 @@ def main():
     my_problems.extend([(i, "oiotoshi") for i in range(1, 41)])
     my_problems.extend([(i, "connecting") for i in range(1, 75)])
     my_problems.extend([(i, "various") for i in range(1, 47)])
+
+    # randomizes the problems.
     random.shuffle(my_problems)
 
-    create_pdf(
+    tsumego_pdf.create_pdf(
         collection_name,
         page_size,
         problems_out_path="gokyo.pdf",
