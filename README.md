@@ -1,7 +1,7 @@
 # tsumego-pdf
 This tool generates a PDF of selected problems from any of the following tsumego selections collections:
   - *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* (900 Problems, Solutions Available)
-  - *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate* (861 Problems)
+  - *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate* (861 Problems, Solutions Available)
   - *Cho Chikun's Encyclopedia of Life &amp; Death: Advanced* (792 Problems)
   - *Goyko Shumyo* (520 Problems)
   - *Xuanxuan Qijing* (347 Problems)
