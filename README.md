@@ -20,7 +20,7 @@ See the above output in full in the [the example PDF](https://github.com/travisg
 - It discourages finding answers by trial-and-error.
 - Paper and a slower pace builds deep focus and can be a more relaxing experience.
 - It provides you a healthy break from digital devices.
-- Solving on paper reinforces the idea that you can solve problems on your own, boosting your self-reliance in the game.
+- Solving puzzles on paper strengthens your ability to trust your own judgment and decisions in Go.
 <br>
 
 ## Setup
