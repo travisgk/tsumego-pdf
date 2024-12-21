@@ -63,9 +63,9 @@ def make_diagram(
     text_height_in=0.2,
     display_width: int = 12,
     write_collection_label: bool = False,
-    outline_thickness_in = 1/128,
-    line_width_in = 1/96,
-    star_point_radius_in = 1/48,
+    outline_thickness_in=1 / 128,
+    line_width_in=1 / 96,
+    star_point_radius_in=1 / 48,
 ):
     """
     Returns a PIL Image of a Life and Death diagram for the desired problem.
@@ -96,8 +96,8 @@ def make_diagram(
         force_color_to_play (bool): if True, the label "black/white to play"
                                     is shown no matter what.
         create_key (bool): if True, the problem solution(s) is/are marked.
-        draw_sole_solving_stone (bool): if True, a stone will be drawn 
-                                        before the solution marker is drawn 
+        draw_sole_solving_stone (bool): if True, a stone will be drawn
+                                        before the solution marker is drawn
                                         on top of the image, but only if the
                                         puzzle has one single solution alone.
         solution_mark (str): the name of the image marker to use:
@@ -196,7 +196,7 @@ def make_diagram(
                     board,
                     x,
                     y,
-                    stone_size_px, 
+                    stone_size_px,
                     is_black=not invert_colors,
                     outline_thickness_in=outline_thickness_in,
                 )
@@ -277,11 +277,8 @@ def make_diagram(
 
     for x, y in marks:
         if draw_sole_solving_stone and num_solutions == 1:
-            is_black = (
-                color_to_play == "black" 
-                or (
-                    color_to_play == "default" and default_to_play == "black"
-                )
+            is_black = color_to_play == "black" or (
+                color_to_play == "default" and default_to_play == "black"
             )
             draw_stone(
                 board,
@@ -291,10 +288,14 @@ def make_diagram(
                 is_black=is_black,
                 outline_thickness_in=outline_thickness_in,
             )
-        
+
         draw_mark(
-            board, x, y, stone_size_px, 
-            is_black=not invert_colors, solution_mark=solution_mark
+            board,
+            x,
+            y,
+            stone_size_px,
+            is_black=not invert_colors,
+            solution_mark=solution_mark,
         )
 
     # crops the puzzle.

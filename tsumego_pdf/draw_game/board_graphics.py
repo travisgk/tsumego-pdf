@@ -89,11 +89,14 @@ def _create_star_point_graphic(stone_size_px, star_point_radius_in):
         Image.Resampling.LANCZOS,
     )
 
+
 _STAR_POINT_GRAPHIC = None
-def draw_board(width_in, line_width_in=1/96, star_point_radius_in=1/48):
+
+
+def draw_board(width_in, line_width_in=1 / 96, star_point_radius_in=1 / 48):
     """Returns a drawn Go board."""
     global _STAR_POINT_GRAPHIC
-    
+
     cell_size_px = width_in / 19 * DPI
 
     if _STAR_POINT_GRAPHIC is None:
@@ -134,8 +137,6 @@ def draw_board(width_in, line_width_in=1/96, star_point_radius_in=1/48):
     radius_px = int(star_point_radius_in * DPI)
     STAR_POINTS = [(x, y) for x in [3, 9, 15] for y in [3, 9, 15]]
 
-    
-    
     ANTIALIAS_SIZE = 128
     if cell_size_px >= ANTIALIAS_SIZE:
         comp = Image.new("RGBA", (width, height), (255, 255, 255, 0))
@@ -168,12 +169,11 @@ def draw_board(width_in, line_width_in=1/96, star_point_radius_in=1/48):
     return image, draw
 
 
-
-
-
 def _load_mark_image(stone_size_px, is_black: bool, solution_mark: str):
     local_dir = os.path.dirname(os.path.abspath(__file__))
-    file_name = f"{solution_mark}-black.png" if is_black else f"{solution_mark}-white.png"
+    file_name = (
+        f"{solution_mark}-black.png" if is_black else f"{solution_mark}-white.png"
+    )
     graphic = Image.open(os.path.join(local_dir, file_name))
     new_size = (stone_size_px, stone_size_px)
 
@@ -182,6 +182,7 @@ def _load_mark_image(stone_size_px, is_black: bool, solution_mark: str):
 
 _BLACK_STONE_IMAGE = None
 _WHITE_STONE_IMAGE = None
+
 
 def draw_stone(board, x, y, stone_size_px, is_black: bool, outline_thickness_in):
     """Draws a stone graphic at the given board coordinate."""
@@ -206,9 +207,11 @@ def draw_stone(board, x, y, stone_size_px, is_black: bool, outline_thickness_in)
     img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
     board.paste(img, (draw_x, draw_y), mask=img)
 
+
 _SOLUTION_MARK = None
 _SOLUTION_BLACK_IMAGE = None
 _SOLUTION_WHITE_IMAGE = None
+
 
 def draw_mark(board, x, y, stone_size_px, is_black: bool, solution_mark: str):
     global _SOLUTION_MARK, _SOLUTION_BLACK_IMAGE, _SOLUTION_WHITE_IMAGE

@@ -67,9 +67,9 @@ def create_pdf(
     text_height_in=0.2,
     include_page_num: bool = True,
     display_width: int = 12,
-    outline_thickness_in = 1/128,
-    line_width_in = 1/96,
-    star_point_radius_in = 1/48,
+    outline_thickness_in=1 / 128,
+    line_width_in=1 / 96,
+    star_point_radius_in=1 / 48,
     draw_bbox_around_diagrams: bool = False,
     verbose: bool = True,
 ):
@@ -124,8 +124,8 @@ def create_pdf(
         random_flip (bool): if True, the puzzle can be randomly flipped around.
         include_text (bool): if True, a label is included below the diagram.
         create_key (bool): if True, a separate PDF with marked answers is created.
-        draw_sole_solving_stone (bool): if True, a stone will be drawn 
-                                        before the solution marker is drawn 
+        draw_sole_solving_stone (bool): if True, a stone will be drawn
+                                        before the solution marker is drawn
                                         on top of the image, but only if the
                                         puzzle has one single solution alone.
         solution_mark (str): the name of the image marker to use:
@@ -163,7 +163,7 @@ def create_pdf(
         problems_out_path = f"{date_time_str} tsumego problems.pdf"
 
     if create_key and solutions_out_path is None:
-            problems_out_path = f"{date_time_str} tsumego solutions.pdf"
+        problems_out_path = f"{date_time_str} tsumego solutions.pdf"
 
     if landscape:
         page_size = (max(page_size), min(page_size))
@@ -190,15 +190,17 @@ def create_pdf(
     """
     Step 3) Calculates margins and column variables.
     """
+    draw_top = True
     if (
-        draw_bbox_around_diagrams 
+        draw_bbox_around_diagrams
         and spacing_below_in < margin_in["top"] + margin_in["bottom"]
     ):
         spacing_below_in = margin_in["top"] + margin_in["bottom"]
+        draw_top = num_columns > 1
 
     m_l, m_t = margin_in["left"] * DPI, margin_in["top"] * DPI
     m_r, m_b = margin_in["right"] * DPI, margin_in["bottom"] * DPI
-    
+
     colspan = column_spacing_in * DPI
     spacing_below = spacing_below_in * DPI
 
@@ -379,7 +381,7 @@ def create_pdf(
             paste_y = int(stone_size_px * (int(current_y / stone_size_px) + 1))
         else:
             paste_y = int(current_y)
-        
+
         def draw_bbox(page, diagram, x, y):
             BBOX_RGB = (200, 200, 200)
             # draws a bbox around diagram if enabled.
@@ -389,15 +391,16 @@ def create_pdf(
             bottom = y + diagram.size[1] + margin_in["bottom"] * DPI
 
             page_draw = ImageDraw.Draw(page)
-            page_draw.line((left, top, right, top), fill=BBOX_RGB, width=1)
-            page_draw.line((left, bottom, right, bottom), fill=BBOX_RGB, width=1)
-            page_draw.line((left, top, left, bottom), fill=BBOX_RGB, width=1)
-            page_draw.line((right, top, right, bottom), fill=BBOX_RGB, width=1)
+            if draw_top:
+                page_draw.line((left, top, right, top), fill=BBOX_RGB, width=3)
+            page_draw.line((left, bottom, right, bottom), fill=BBOX_RGB, width=3)
+            page_draw.line((left, top, left, bottom), fill=BBOX_RGB, width=3)
+            page_draw.line((right, top, right, bottom), fill=BBOX_RGB, width=3)
 
         page.paste(diagram, (col_x[current_col], paste_y))
-        
+
         if draw_bbox_around_diagrams:
-           draw_bbox(page, diagram, col_x[current_col], paste_y)
+            draw_bbox(page, diagram, col_x[current_col], paste_y)
 
         if create_key:
             key_page.paste(key_diagram, (col_x[current_col], paste_y))

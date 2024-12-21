@@ -50,7 +50,6 @@ def main():
     # shuffles all the selections.
     random.shuffle(problem_selections)
 
-
     tsumego_pdf.create_pdf(
         problem_selections,
         page_size,
@@ -64,9 +63,9 @@ def main():
         spacing_below_in=1,
         placement_method="block",
         include_text=True,
-        create_key = True,
-        draw_sole_solving_stone = True,
-        solution_mark = "star",
+        create_key=True,
+        draw_sole_solving_stone=True,
+        solution_mark="star",
         problem_text_rgb=(255, 255, 255),
         solution_text_rgb=(128, 128, 128),
         include_page_num=True,
