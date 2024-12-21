@@ -78,7 +78,7 @@ Setting `problem_nums` to `None` will select all problems in the desired collect
 <br>
 
 ## Notes
-Problems **#218** and **#533** in the Elementary section of Cho Chikun's problems have been pointed out as unsolvable, so they've been tweaked for this repository.
+Problems **#218** and **#533** in the Elementary section of Cho Chikun's problems have been pointed out as unsolvable, so they've been tweaked for this repository. Problem *#344* in the Intermediate section has been tweaked as well.
 
 <br>
 
