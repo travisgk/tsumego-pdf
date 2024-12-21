@@ -3,71 +3,17 @@ from PIL import Image, ImageDraw, ImageFont
 
 DPI = 300
 
-LINE_WIDTH_IN = 1 / 96
 LINE_COLOR = (128, 128, 128)
-STAR_POINT_RADIUS_IN = 1 / 48
 
-TEXT_PADDING_TOP_IN = 0.0625
+TEXT_PADDING_TOP_IN = 1 / 16
 TEXT_PADDING_BOTTOM_IN = 0
 BOARD_PADDING_PX = 2
-
-
-def draw_board(width_in):
-    """Returns a drawn Go board."""
-    line_width = max(1, int(LINE_WIDTH_IN * DPI))
-
-    OFF = BOARD_PADDING_PX
-
-    width = int(width_in * DPI) + OFF * 2
-    height = int(width_in * DPI) + OFF * 2
-    image = Image.new("RGB", (width, height), "white")
-
-    # draws lines.
-    draw = ImageDraw.Draw(image)
-
-    cell_size_px = width_in / 19 * DPI
-
-    # draws the vertical lines.
-    for x in range(19):
-        draw_x = int(cell_size_px / 2 + x * cell_size_px)
-        y0 = int(cell_size_px / 2)
-        y1 = int(y0 + 18 * cell_size_px)
-        a = (draw_x + OFF, y0 + OFF - line_width // 2 + 1)
-        b = (draw_x + OFF, y1 + OFF + line_width // 2 - 1)
-        draw.line([a, b], fill=LINE_COLOR, width=line_width)
-
-    # draws the horizontal lines.
-    for y in range(19):
-        draw_y = int(cell_size_px / 2 + y * cell_size_px)
-        x0 = int(cell_size_px / 2)
-        x1 = int(x0 + 18 * cell_size_px)
-        a = (OFF + x0 - line_width // 2 + 1, draw_y + OFF)
-        b = (OFF + x1 + line_width // 2 - 1, draw_y + OFF)
-        draw.line([a, b], fill=LINE_COLOR, width=line_width)
-
-    # draws the star points.
-    radius_px = int(STAR_POINT_RADIUS_IN * DPI)
-    STAR_POINTS = [(x, y) for x in [3, 9, 15] for y in [3, 9, 15]]
-    for p in STAR_POINTS:
-        x = int(cell_size_px / 2 + p[0] * cell_size_px) + OFF
-        y = int(cell_size_px / 2 + p[1] * cell_size_px) + OFF
-        bbox = (
-            x - radius_px,
-            y - radius_px,
-            x + radius_px + radius_px % 2,
-            y + radius_px + radius_px % 2,
-        )
-        draw.ellipse(bbox, fill=LINE_COLOR)
-
-    return image, draw
-
 
 _GRAPHIC_PADDING_PX = 6
 
 
-def _create_stone_graphic(stone_size_px, is_black: bool):
+def _create_stone_graphic(stone_size_px, is_black: bool, outline_thickness_in):
     """Returns a PIL image with the stone graphic inside."""
-    OUTLINE_THICKNESS_IN = 1 / 128
     SCALE = 4
 
     # dims of output image.
@@ -95,7 +41,7 @@ def _create_stone_graphic(stone_size_px, is_black: bool):
     if not is_black:
         # draws a smaller white circle on top.
         fill_color = "white"
-        inner_radius = int(outer_radius - OUTLINE_THICKNESS_IN * SCALE * DPI)
+        inner_radius = int(outer_radius - outline_thickness_in * SCALE * DPI)
 
         bbox = (
             center[0] - inner_radius,
@@ -111,9 +57,123 @@ def _create_stone_graphic(stone_size_px, is_black: bool):
     )
 
 
-def _load_mark_image(stone_size_px, is_black: bool):
+def _create_star_point_graphic(stone_size_px, star_point_radius_in):
+    """Returns a PIL image with the stone graphic inside."""
+    SCALE = 4
+
+    # dims of output image.
+    w = stone_size_px + _GRAPHIC_PADDING_PX * 2
+    h = stone_size_px + _GRAPHIC_PADDING_PX * 2
+
+    # stone image is drawn scaled up.
+    large_size = (int(w * SCALE), int(h * SCALE))
+    large_image = Image.new("RGBA", large_size, (255, 255, 255, 0))
+    draw = ImageDraw.Draw(large_image)
+
+    # draws a circle.
+    fill_color = LINE_COLOR
+    center = (large_size[0] // 2, large_size[1] // 2)
+
+    star_point_radius = int(star_point_radius_in * DPI * SCALE)
+
+    bbox = (
+        center[0] - star_point_radius,
+        center[1] - star_point_radius,
+        center[0] + star_point_radius,
+        center[1] + star_point_radius,
+    )
+    draw.ellipse(bbox, fill=fill_color)
+
+    return large_image.resize(
+        (int(w), int(h)),
+        Image.Resampling.LANCZOS,
+    )
+
+_STAR_POINT_GRAPHIC = None
+def draw_board(width_in, line_width_in=1/96, star_point_radius_in=1/48):
+    """Returns a drawn Go board."""
+    global _STAR_POINT_GRAPHIC
+    
+    cell_size_px = width_in / 19 * DPI
+
+    if _STAR_POINT_GRAPHIC is None:
+        _STAR_POINT_GRAPHIC = _create_star_point_graphic(
+            cell_size_px, star_point_radius_in
+        )
+
+    line_width = max(1, int(line_width_in * DPI))
+
+    OFF = BOARD_PADDING_PX
+
+    width = int(width_in * DPI) + OFF * 2
+    height = int(width_in * DPI) + OFF * 2
+    image = Image.new("RGBA", (width, height), (255, 255, 255, 255))
+
+    # draws lines.
+    draw = ImageDraw.Draw(image)
+
+    # draws the vertical lines.
+    for x in range(19):
+        draw_x = int(cell_size_px / 2 + x * cell_size_px)
+        y0 = int(cell_size_px / 2)
+        y1 = int(y0 + 18 * cell_size_px)
+        a = (draw_x + OFF, y0 + OFF - line_width // 2 + 1)
+        b = (draw_x + OFF, y1 + OFF + line_width // 2 - 1)
+        draw.line([a, b], fill=LINE_COLOR, width=line_width)
+
+    # draws the horizontal lines.
+    for y in range(19):
+        draw_y = int(cell_size_px / 2 + y * cell_size_px)
+        x0 = int(cell_size_px / 2)
+        x1 = int(x0 + 18 * cell_size_px)
+        a = (OFF + x0 - line_width // 2 + 1, draw_y + OFF)
+        b = (OFF + x1 + line_width // 2 - 1, draw_y + OFF)
+        draw.line([a, b], fill=LINE_COLOR, width=line_width)
+
+    # draws the star points.
+    radius_px = int(star_point_radius_in * DPI)
+    STAR_POINTS = [(x, y) for x in [3, 9, 15] for y in [3, 9, 15]]
+
+    
+    
+    ANTIALIAS_SIZE = 128
+    if cell_size_px >= ANTIALIAS_SIZE:
+        comp = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    else:
+        comp = None
+
+    for x, y in STAR_POINTS:
+        if cell_size_px >= ANTIALIAS_SIZE:
+            draw_x = int(x * cell_size_px) - _GRAPHIC_PADDING_PX + OFF
+            draw_y = int(y * cell_size_px) - _GRAPHIC_PADDING_PX + OFF
+            comp.paste(
+                _STAR_POINT_GRAPHIC,
+                (draw_x, draw_y),
+                mask=_STAR_POINT_GRAPHIC,
+            )
+        else:
+            p_x = int(cell_size_px / 2 + x * cell_size_px) + OFF
+            p_y = int(cell_size_px / 2 + y * cell_size_px) + OFF
+            bbox = (
+                p_x - radius_px,
+                p_y - radius_px,
+                p_x + radius_px + (radius_px % 2),
+                p_y + radius_px + (radius_px % 2),
+            )
+            draw.ellipse(bbox, fill=LINE_COLOR)
+
+    if cell_size_px >= ANTIALIAS_SIZE:
+        image = Image.alpha_composite(image, comp)
+
+    return image, draw
+
+
+
+
+
+def _load_mark_image(stone_size_px, is_black: bool, solution_mark: str):
     local_dir = os.path.dirname(os.path.abspath(__file__))
-    file_name = "mark-black.png" if is_black else "mark-white.png"
+    file_name = f"{solution_mark}-black.png" if is_black else f"{solution_mark}-white.png"
     graphic = Image.open(os.path.join(local_dir, file_name))
     new_size = (stone_size_px, stone_size_px)
 
@@ -123,15 +183,22 @@ def _load_mark_image(stone_size_px, is_black: bool):
 _BLACK_STONE_IMAGE = None
 _WHITE_STONE_IMAGE = None
 
-
-def draw_stone(board, x, y, stone_size_px, is_black: bool):
+def draw_stone(board, x, y, stone_size_px, is_black: bool, outline_thickness_in):
     """Draws a stone graphic at the given board coordinate."""
 
     # loads stone graphics if they haven't been loaded yet.
     global _BLACK_STONE_IMAGE, _WHITE_STONE_IMAGE
     if _BLACK_STONE_IMAGE is None:
-        _BLACK_STONE_IMAGE = _create_stone_graphic(stone_size_px, is_black=True)
-        _WHITE_STONE_IMAGE = _create_stone_graphic(stone_size_px, is_black=False)
+        _BLACK_STONE_IMAGE = _create_stone_graphic(
+            stone_size_px,
+            is_black=True,
+            outline_thickness_in=outline_thickness_in,
+        )
+        _WHITE_STONE_IMAGE = _create_stone_graphic(
+            stone_size_px,
+            is_black=False,
+            outline_thickness_in=outline_thickness_in,
+        )
 
     OFF = BOARD_PADDING_PX
     draw_x = int(x * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
@@ -139,16 +206,19 @@ def draw_stone(board, x, y, stone_size_px, is_black: bool):
     img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
     board.paste(img, (draw_x, draw_y), mask=img)
 
-
+_SOLUTION_MARK = None
 _SOLUTION_BLACK_IMAGE = None
 _SOLUTION_WHITE_IMAGE = None
 
-
-def draw_mark(board, x, y, stone_size_px, is_black):
-    global _SOLUTION_BLACK_IMAGE, _SOLUTION_WHITE_IMAGE
-    if _SOLUTION_BLACK_IMAGE is None:
-        _SOLUTION_BLACK_IMAGE = _load_mark_image(stone_size_px, is_black=True)
-        _SOLUTION_WHITE_IMAGE = _load_mark_image(stone_size_px, is_black=False)
+def draw_mark(board, x, y, stone_size_px, is_black: bool, solution_mark: str):
+    global _SOLUTION_MARK, _SOLUTION_BLACK_IMAGE, _SOLUTION_WHITE_IMAGE
+    if _SOLUTION_MARK != solution_mark:
+        _SOLUTION_BLACK_IMAGE = _load_mark_image(
+            stone_size_px, is_black=True, solution_mark=solution_mark
+        )
+        _SOLUTION_WHITE_IMAGE = _load_mark_image(
+            stone_size_px, is_black=False, solution_mark=solution_mark
+        )
 
     OFF = BOARD_PADDING_PX
     draw_x = int(x * stone_size_px) + OFF

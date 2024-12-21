@@ -60,11 +60,17 @@ def create_pdf(
     random_flip: bool = True,
     include_text: bool = True,
     create_key: bool = True,
+    draw_sole_solving_stone: bool = False,
+    solution_mark: str = "x",
     problem_text_rgb: tuple = (128, 128, 128),
     solution_text_rgb: tuple = (128, 128, 128),
     text_height_in=0.2,
     include_page_num: bool = True,
     display_width: int = 12,
+    outline_thickness_in = 1/128,
+    line_width_in = 1/96,
+    star_point_radius_in = 1/48,
+    draw_bbox_around_diagrams: bool = False,
     verbose: bool = True,
 ):
     """
@@ -118,6 +124,13 @@ def create_pdf(
         random_flip (bool): if True, the puzzle can be randomly flipped around.
         include_text (bool): if True, a label is included below the diagram.
         create_key (bool): if True, a separate PDF with marked answers is created.
+        draw_sole_solving_stone (bool): if True, a stone will be drawn 
+                                        before the solution marker is drawn 
+                                        on top of the image, but only if the
+                                        puzzle has one single solution alone.
+        solution_mark (str): the name of the image marker to use:
+                             - "x"
+                             - "star"
         problem_text_rgb (tuple): the label color used for the problems print-out.
         solution_text_rgb (tuple): the label color used for the solutions print-out.
         text_height_in (num): the height of the label text.
@@ -126,6 +139,12 @@ def create_pdf(
         display_width (int): the amount of stones wide that are displayed.
                              19 will show the entire board width.
                              12 is ideal for Cho Chikun's problems.
+        outline_thickness_in (num): the width of the white stone outline in inches.
+        line_width_in (num): the width in inches of the board lines.
+        star_point_radius_in (num): the radius of the star points in inches.
+        draw_bbox_around_diagrams (bool): if True, a thin rectangle will be drawn
+                                          around each diagram. this is useful
+                                          for creating stand-alone diagrams.
         verbose (bool): if True, a progress bar is displayed.
     """
     PAGE_NUM_TEXT_SIZE_IN = 0.125
@@ -143,9 +162,7 @@ def create_pdf(
         now = datetime.now()
         problems_out_path = f"{date_time_str} tsumego problems.pdf"
 
-    if create_key:
-        include_text = True
-        if solutions_out_path is None:
+    if create_key and solutions_out_path is None:
             problems_out_path = f"{date_time_str} tsumego solutions.pdf"
 
     if landscape:
@@ -160,19 +177,9 @@ def create_pdf(
     pdf_width, pdf_height = page_size
 
     """
-    Step 2) Ensures problems.
+    Step 2) Retrieves problems.
     """
     problems = get_problems()
-    """if problems.get(collection_name) is None:
-        print(
-            f"'{collection_name}'' is not an available collection."
-            "Only the following are accepted:"
-        )
-        for key in problems.keys():
-            print(f'\t- "{key}"')
-
-        return"""
-
     w_in, h_in = page_size[0] / 72, page_size[1] / 72
     if landscape and w_in < h_in:
         placeholder = w_in
@@ -183,9 +190,15 @@ def create_pdf(
     """
     Step 3) Calculates margins and column variables.
     """
+    if (
+        draw_bbox_around_diagrams 
+        and spacing_below_in < margin_in["top"] + margin_in["bottom"]
+    ):
+        spacing_below_in = margin_in["top"] + margin_in["bottom"]
+
     m_l, m_t = margin_in["left"] * DPI, margin_in["top"] * DPI
     m_r, m_b = margin_in["right"] * DPI, margin_in["bottom"] * DPI
-
+    
     colspan = column_spacing_in * DPI
     spacing_below = spacing_below_in * DPI
 
@@ -285,6 +298,9 @@ def create_pdf(
             text_height_in=text_height_in,
             display_width=display_width,
             write_collection_label=len(collection_names) > 1,
+            outline_thickness_in=outline_thickness_in,
+            line_width_in=line_width_in,
+            star_point_radius_in=star_point_radius_in,
         )
 
         if create_key:
@@ -299,10 +315,15 @@ def create_pdf(
                 flip_y=flip_y,
                 include_text=include_text,
                 create_key=True,
+                draw_sole_solving_stone=draw_sole_solving_stone,
+                solution_mark=solution_mark,
                 text_rgb=solution_text_rgb,
                 text_height_in=text_height_in,
                 display_width=display_width,
                 write_collection_label=len(collection_names) > 1,
+                outline_thickness_in=outline_thickness_in,
+                line_width_in=line_width_in,
+                star_point_radius_in=star_point_radius_in,
             )
         else:
             key_diagram = None
@@ -347,6 +368,7 @@ def create_pdf(
                     print_x = int(page.size[0] / 2 - page_num.size[0] / 2)
                     print_y = int(h - m_b)
                     page.paste(page_num, (print_x, print_y))
+
                     if create_key:
                         key_page.paste(page_num, (print_x, print_y))
 
@@ -357,9 +379,31 @@ def create_pdf(
             paste_y = int(stone_size_px * (int(current_y / stone_size_px) + 1))
         else:
             paste_y = int(current_y)
+        
+        def draw_bbox(page, diagram, x, y):
+            BBOX_RGB = (200, 200, 200)
+            # draws a bbox around diagram if enabled.
+            left = x - margin_in["left"] * DPI
+            top = y - margin_in["top"] * DPI
+            right = x + diagram.size[0] + margin_in["right"] * DPI
+            bottom = y + diagram.size[1] + margin_in["bottom"] * DPI
+
+            page_draw = ImageDraw.Draw(page)
+            page_draw.line((left, top, right, top), fill=BBOX_RGB, width=1)
+            page_draw.line((left, bottom, right, bottom), fill=BBOX_RGB, width=1)
+            page_draw.line((left, top, left, bottom), fill=BBOX_RGB, width=1)
+            page_draw.line((right, top, right, bottom), fill=BBOX_RGB, width=1)
+
         page.paste(diagram, (col_x[current_col], paste_y))
+        
+        if draw_bbox_around_diagrams:
+           draw_bbox(page, diagram, col_x[current_col], paste_y)
+
         if create_key:
             key_page.paste(key_diagram, (col_x[current_col], paste_y))
+            if draw_bbox_around_diagrams:
+                draw_bbox(key_page, key_diagram, col_x[current_col], paste_y)
+
         current_y += diagram.size[1] + spacing_below
 
     write_page_to_pdf(page, prob_pdf, show_page=False)

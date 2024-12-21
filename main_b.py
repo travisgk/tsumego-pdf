@@ -1,6 +1,6 @@
 """
 This example generates a PDF for A4 size paper 
-with random problems from the Gokyo Shumyo,
+with 100 random problems from the Gokyo Shumyo,
 where white is always the color to play.
 """
 
@@ -43,6 +43,7 @@ def main():
 
     # randomizes the problems.
     random.shuffle(selections)
+    selections = selections[:100]
 
     tsumego_pdf.create_pdf(
         selections,
@@ -59,6 +60,7 @@ def main():
         include_page_num=True,
         text_height_in=0.1,
         display_width=19,
+        star_point_radius_in=1/64,
         verbose=True,  # shows progress bar
     )
 
