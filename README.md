@@ -1,11 +1,11 @@
 # tsumego-pdf
 This tool generates a PDF of selected problems from any of the following tsumego selections collections:
-  - *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* (Solutions Available)
-  - *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate*
-  - *Cho Chikun's Encyclopedia of Life &amp; Death: Advanced*
-  - *Goyko Shumyo*
-  - *Xuanxuan Qijing*
-  - *Igo Hatsuyo-ron*
+  - *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* (900 Problems, Solutions Available)
+  - *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate* (861 Problems)
+  - *Cho Chikun's Encyclopedia of Life &amp; Death: Advanced* (792 Problems)
+  - *Goyko Shumyo* (520 Problems)
+  - *Xuanxuan Qijing* (347 Problems)
+  - *Igo Hatsuyo-ron* (183 Problems)
 <br>
 
 ![Tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/outputs.png?raw=true)
@@ -48,7 +48,7 @@ problem_selections.extend([(num, "cho-elementary") for num in problem_nums])
 
 # adds 100 random problems from Cho's Intermediate Life & Death.
 collection_name = "cho-intermediate"
-problem_nums = random.sample(range(1, 861), 100)
+problem_nums = random.sample(range(1, 862), 100)
 problem_selections.extend([(num, "cho-intermediate") for num in problem_nums])
 
 # shuffles all the selections.
@@ -78,7 +78,7 @@ Setting `problem_nums` to `None` will select all problems in the desired collect
 <br>
 
 ## Notes
-Problems **#218** and **#533** in the Elementary section of Cho Chikun's problems have been pointed out as unsolvable, so they've been tweaked for this repository. Problems *#344* and *#396* in the Intermediate section have been tweaked as well.
+Problems **#218** and **#533** in the Elementary section of Cho Chikun's problems have been pointed out as unsolvable, so they've been tweaked for this repository. Problems **#344** and **#396** in the Intermediate section have been tweaked as well.
 
 <br>
 
