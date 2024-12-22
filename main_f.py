@@ -9,9 +9,10 @@ import tsumego_pdf
 def main():
     
     """
-    This is a 19x19 template.
+    This is a 19x19 template with black to play.
     
     latex_str = (
+        "B"
         "<(((((((((((((((((> "
         "[+++++++++++++++++] "
         "[+++++++++++++++++] "
@@ -33,9 +34,10 @@ def main():
         ",!)))))))))))))!!!. "
     )
     """
-
+    # white to play. this example shows invading too early.
     latex_str = (
-        "W<(((((((((((((((((> "
+        "W"
+        "<(((((((((((((((((> "
         "[+++++++++++++++++] "
         "[++++!++++++++++++] "
         "[++!+++++*+++++*@+] "
