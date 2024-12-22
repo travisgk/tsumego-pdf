@@ -28,6 +28,7 @@ You will need Pillow and ReportLab to run this program.
 `pip install pillow reportlab`
 
 <br>
+<br>
 
 ## Usage
 The following code selects 100 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and 100 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate*, mixes them all together, and then saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided.
@@ -82,18 +83,26 @@ tsumego_pdf.create_pdf(
 ```
 
 Setting `problem_nums` to `None` will select all problems in the desired collection.
+
+<br>
 <br>
 
 ## Notes
 Problems **#218** and **#533** in the Elementary section of Cho Chikun's problems have been pointed out as unsolvable, so they've been tweaked for this repository. Problems **#344** and **#396** in the Intermediate section have been tweaked as well.
+
 <br>
+
+The solutions come from online Go websites. They are presumed to be correct, but please raise an issue if you believe the solution presented is incorrect and specify the correct solution(s).
+
 <br>
+
 The options for `color_to_play` are:
 - "default": The color to play will be as it appears in its original book.
 - "black": The color to play will always be black; the color to play will not be specified in the label.
 - "white": The color to play will always be white; the color to play will not be specified in the label.
 - "random": The color to play will be random for each problem, and the label will say who's to move first.
 
+<br>
 <br>
 
 ## Special Thanks
