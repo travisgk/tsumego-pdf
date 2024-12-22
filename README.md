@@ -54,9 +54,16 @@ problem_selections.extend([(num, "cho-intermediate") for num in problem_nums])
 # shuffles all the selections.
 random.shuffle(problem_selections)
 
+
+page_size = reportlab.lib.pagesizes.letter  # US letter paper size.
+margin_in = {  # print margins in inches.
+  "left": 0.5, "top": 0.5, "right": 0.5, "bottom": 0.5
+}
+
 tsumego_pdf.create_pdf(
     problem_selections,
     page_size,
+    margin_in=margin_in,
     problems_out_path="random-200-mix.pdf",
     solutions_out_path="random-200-mix-key.pdf",
     color_to_play="black",
@@ -79,6 +86,8 @@ Setting `problem_nums` to `None` will select all problems in the desired collect
 
 ## Notes
 Problems **#218** and **#533** in the Elementary section of Cho Chikun's problems have been pointed out as unsolvable, so they've been tweaked for this repository. Problems **#344** and **#396** in the Intermediate section have been tweaked as well.
+
+- 
 
 <br>
 
