@@ -47,9 +47,10 @@ def calc_stone_size(diagram_width_in, display_width):
 
 def make_diagram(
     diagram_width_in,
-    problem_num: int,
-    collection_name: str,
+    problem_num: int = None,
+    collection_name: str = None,
     section_name: str = None,
+    latex_str: str = None,
     color_to_play: str = "default",
     flip_xy: bool = True,
     flip_x: bool = True,
@@ -84,6 +85,9 @@ def make_diagram(
         section_name (str): the name of the section to use.
                             for any collection other than the Gokyo Shumyo
                             this will be None.
+        latex_str (str): overrides the problem selection process and just
+                         makes a diagram of the LaTeX given directly.
+                         None by default.
         color_to_play (str):
             - "default": keeps stone colors as they are in the original data.
             - "black": forces the player to move to be black.
@@ -141,44 +145,54 @@ def make_diagram(
     # loads the problems if not yet done, then selects the problem.
     _load_problems()
 
-    collection_name = collection_name.lower()
-    problem_collection = _PROBLEMS.get(collection_name)
-    if problem_collection is None:
+    if collection_name is None and latex_str is None:
         print(
-            f"'{collection}'' is not an available collection. "
-            "Only the following are accepted:"
+            "No problem was specified. make_diagram needs to be given a "
+            "problem selection or a LaTeX string."
         )
-        for key in _PROBLEMS.keys():
-            print(f'\t- "{key}"')
-
         return None
 
-    if section_name is not None:
-        # the section name must be considered.
-        section = problem_collection.get(section_name)
-        if section is None:
+    if collection_name is not None:
+        collection_name = collection_name.lower()
+        problem_collection = _PROBLEMS.get(collection_name)
+        if problem_collection is None:
             print(
-                f"The collection '{collection_name}' does not have "
-                f"a section named {section_name}."
+                f"'{collection}'' is not an available collection. "
+                "Only the following are accepted:"
             )
+            for key in _PROBLEMS.keys():
+                print(f'\t- "{key}"')
+
             return None
 
-        lines = section.get(str(problem_num))
-        if lines is None:
-            print(
-                f"The section '{section_name}' of {collection_name} "
-                f"does not have a problem numbered #{problem_num}."
-            )
-            return None
+        if section_name is not None:
+            # the section name must be considered.
+            section = problem_collection.get(section_name)
+            if section is None:
+                print(
+                    f"The collection '{collection_name}' does not have "
+                    f"a section named {section_name}."
+                )
+                return None
 
+            lines = section.get(str(problem_num))
+            if lines is None:
+                print(
+                    f"The section '{section_name}' of {collection_name} "
+                    f"does not have a problem numbered #{problem_num}."
+                )
+                return None
+
+        else:
+            lines = problem_collection.get(str(problem_num))
+            if lines is None:
+                print(
+                    f"The collection '{collection_name}' does not have "
+                    f"a problem numbered #{problem_num}."
+                )
+                return None
     else:
-        lines = problem_collection.get(str(problem_num))
-        if lines is None:
-            print(
-                f"The collection '{collection_name}' does not have "
-                f"a problem numbered #{problem_num}."
-            )
-            return None
+        lines = latex_str
 
     lines = lines.split(" ")
     default_to_play = "black" if lines[0][0] == "B" else "white"
@@ -218,6 +232,11 @@ def make_diagram(
                 max_y = max(max_y, y)
             elif create_key and c == "X":  # solution.
                 marks.append((x, y))
+
+    if max_x == 0:
+        max_x = 18
+    if max_y == 0:
+        max_y = 18
 
     """
     Step 4) Adjusts the bounding box to crop out the puzzle while also
@@ -278,11 +297,11 @@ def make_diagram(
                 num_solutions += 1
                 #
 
+    is_black = color_to_play == "black" or (
+        color_to_play == "default" and default_to_play == "black"
+    )
     for x, y in marks:
         if draw_sole_solving_stone and num_solutions == 1:
-            is_black = color_to_play == "black" or (
-                color_to_play == "default" and default_to_play == "black"
-            )
             draw_stone(
                 board,
                 x,
@@ -297,7 +316,8 @@ def make_diagram(
             x,
             y,
             stone_size_px,
-            is_black=not invert_colors,
+            is_black=(is_black and not invert_colors)
+            or (not is_black and invert_colors),
             solution_mark=solution_mark,
         )
 
