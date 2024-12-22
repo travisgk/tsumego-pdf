@@ -55,6 +55,7 @@ def make_diagram(
     flip_x: bool = True,
     flip_y: bool = True,
     include_text: bool = True,
+    show_problem_num: bool = True,
     force_color_to_play: bool = False,
     create_key: bool = True,
     draw_sole_solving_stone: bool = False,
@@ -93,6 +94,8 @@ def make_diagram(
         flip_y (bool): if True, problem is flipped across Y-axis.
         include_text (bool): if True, a problem label
                              will be added to the diagram.
+        show_problem_num (bool): if True, the problem number will be shown on the worksheet.
+                                 the number is always shown on the key no matter what.
         force_color_to_play (bool): if True, the label "black/white to play"
                                     is shown no matter what.
         create_key (bool): if True, the problem solution(s) is/are marked.
@@ -331,19 +334,27 @@ def make_diagram(
         )
 
         # the text to be displayed is determined.
-        if "gokyo-shumyo" in collection_name:
-            reverse_dict = {value: key for key, value in GOKYO_SHUMYO_SECTIONS.items()}
-            section_num = reverse_dict[section_name]
-            text_str = f"problem {section_num}-{problem_num}"
-        else:
-            text_str = f"problem {problem_num}"
+        text_str = ""
+        if create_key or show_problem_num:
+            if "gokyo-shumyo" in collection_name:
+                reverse_dict = {
+                    value: key for key, value in GOKYO_SHUMYO_SECTIONS.items()
+                }
+                section_num = reverse_dict[section_name]
+                text_str = f"problem {section_num}-{problem_num}"
+            else:
+                text_str = f"problem {problem_num}"
 
         if state_color_to_play:
             if color_to_play == "default":
                 color_str = default_to_play
             else:
                 color_str = color_to_play
-            text_str += f", {color_to_play} to play"
+
+            if create_key or show_problem_num:
+                text_str += f", {color_to_play} to play"
+            else:
+                text_str = f"{color_to_play} to play"
 
         label_str = None
         if write_collection_label:

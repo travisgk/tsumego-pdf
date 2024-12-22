@@ -59,6 +59,8 @@ def create_pdf(
     placement_method: str = "block",
     random_flip: bool = True,
     include_text: bool = True,
+    show_problem_num: bool = True,
+    force_color_to_play: bool = False,
     create_key: bool = True,
     draw_sole_solving_stone: bool = False,
     solution_mark: str = "x",
@@ -123,6 +125,10 @@ def create_pdf(
             - "block" places puzzles so their grid lines line up.
         random_flip (bool): if True, the puzzle can be randomly flipped around.
         include_text (bool): if True, a label is included below the diagram.
+        show_problem_num (bool): if True, the problem number will be shown on the worksheet.
+                                 the number is always shown on the key no matter what.
+        force_color_to_play (bool): if True, the label "black/white to play"
+                                    is shown no matter what.
         create_key (bool): if True, a separate PDF with marked answers is created.
         draw_sole_solving_stone (bool): if True, a stone will be drawn
                                         before the solution marker is drawn
@@ -295,6 +301,8 @@ def create_pdf(
             flip_x=flip_x,
             flip_y=flip_y,
             include_text=include_text,
+            show_problem_num=show_problem_num,
+            force_color_to_play=force_color_to_play,
             create_key=False,
             text_rgb=problem_text_rgb,
             text_height_in=text_height_in,
@@ -316,6 +324,8 @@ def create_pdf(
                 flip_x=flip_x,
                 flip_y=flip_y,
                 include_text=include_text,
+                show_problem_num=show_problem_num,
+                force_color_to_play=force_color_to_play,
                 create_key=True,
                 draw_sole_solving_stone=draw_sole_solving_stone,
                 solution_mark=solution_mark,
