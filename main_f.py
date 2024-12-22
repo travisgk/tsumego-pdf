@@ -7,7 +7,10 @@ import tsumego_pdf
 
 
 def main():
+    
     """
+    This is a 19x19 template.
+    
     latex_str = (
         "<(((((((((((((((((> "
         "[+++++++++++++++++] "
