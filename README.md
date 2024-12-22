@@ -5,7 +5,7 @@ This tool generates a PDF of selected problems from any of the following tsumego
   - *Cho Chikun's Encyclopedia of Life &amp; Death: Advanced* (792 Problems)
   - *Goyko Shumyo* (520 Problems)
   - *Xuanxuan Qijing* (347 Problems)
-  - *Igo Hatsuyo-ron* (183 Problems)
+  - *Igo Hatsuyōron* (183 Problems)
 <br>
 
 ![Tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/outputs.png?raw=true)
