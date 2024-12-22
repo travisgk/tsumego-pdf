@@ -9,9 +9,9 @@ This tool generates a PDF of selected problems from any of the following tsumego
 <br>
 
 ![Tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/outputs.png?raw=true)
-The problems can be set to be flipped around randomly, as well as setting the color to play.<br>This program will also by default create a parallel PDF which will contain the answers to the selected problems (if solutions are available for the collection).
+The problems by default are flipped around random.<br>This program will also create a parallel PDF which will contain the answers to the selected problems (if solutions are available for the collection).
 
-See the above output in full in the [the example PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego.pdf) and its corresponding [answers PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego-key.pdf).
+See output similar to the screenshot above in the [the example PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego.pdf) and its corresponding [answers PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego-key.pdf).
 
 <br>
 
@@ -86,8 +86,13 @@ Setting `problem_nums` to `None` will select all problems in the desired collect
 
 ## Notes
 Problems **#218** and **#533** in the Elementary section of Cho Chikun's problems have been pointed out as unsolvable, so they've been tweaked for this repository. Problems **#344** and **#396** in the Intermediate section have been tweaked as well.
-
-- 
+<br>
+<br>
+The options for `color_to_play` are:
+- "default": The color to play will be as it appears in its original book.
+- "black": The color to play will always be black; the color to play will not be specified in the label.
+- "white": The color to play will always be white; the color to play will not be specified in the label.
+- "random": The color to play will be random for each problem, and the label will say who's to move first.
 
 <br>
 
