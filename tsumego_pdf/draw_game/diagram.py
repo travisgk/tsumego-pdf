@@ -244,7 +244,7 @@ def make_diagram(
     """
     # flipping the X and Y axes is forbidden/enforced depending on
     # the bbox attributes.
-    if 0.9 < abs(max_x / max_y) < 1.1:
+    if 0.8 <= abs(max_x / max_y) <= 1.2:
         # the bbox is relatively square, so it won't be visually jarring
         # to let it be flipped diagonally either way.
         pass
