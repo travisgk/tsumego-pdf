@@ -36,37 +36,39 @@ The following code selects 100 random problems from *Cho Chikun's Encyclopedia o
 This provides [a PDF with the tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-c.pdf) and [a companion PDF with the solutions](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-c-key.pdf).
 
 ```
+from datetime import datetime
 import random
 import reportlab.lib.pagesizes
 import tsumego_pdf
 
-problem_selections = []
+page_size = reportlab.lib.pagesizes.letter  # US letter paper size.
 
-# adds 100 random problems from Cho's Elementary Life & Death.
+# defines the problems I previously had the most problems with.
 collection_name = "cho-elementary"
-problem_nums = random.sample(range(1, 901), 100)
-problem_selections.extend([(num, "cho-elementary") for num in problem_nums])
+problem_nums = [
+    637, 416, 127, 476, 183, 521, 231, 293, 627,
+    434, 288, 725, 523, 316, 422, 99, 657, 114,
+]
 
-# adds 100 random problems from Cho's Intermediate Life & Death.
-collection_name = "cho-intermediate"
-problem_nums = random.sample(range(1, 862), 100)
-problem_selections.extend([(num, "cho-intermediate") for num in problem_nums])
+# fills the list with other random problems until there are 120 total problems.
+while len(problem_nums) < 120:
+    rand_num = random.randint(1, 900)
+    if rand_num in problem_nums:
+        problem_nums.append(rand_num)
 
-# shuffles all the selections.
+# constructs the selections and shuffles.
+problem_selections = [(num, collection_name) for num in problem_nums]
 random.shuffle(problem_selections)
 
-
-page_size = reportlab.lib.pagesizes.letter  # US letter paper size.
-margin_in = {  # print margins in inches.
-  "left": 0.5, "top": 0.5, "right": 0.5, "bottom": 0.5
-}
+# writes the PDF.
+now = datetime.now()
+date_time_str = now.strftime("%Y-%m-%d %H%M%S")
 
 tsumego_pdf.create_pdf(
     problem_selections,
     page_size,
-    margin_in=margin_in,
-    problems_out_path="random-200-mix.pdf",
-    solutions_out_path="random-200-mix-key.pdf",
+    problems_out_path=f"tsumego-{date_time_str}.pdf",
+    solutions_out_path=f"tsumego-{date_time_str}-key.pdf",
     color_to_play="black",
     landscape=False,
     num_columns=2,
@@ -78,7 +80,8 @@ tsumego_pdf.create_pdf(
     solution_text_rgb=(128, 128, 128),
     include_page_num=True,
     display_width=12,
-    verbose=True,  # shows progress bar
+    ratio_to_flip_xy=4/6,  # more likely to have puzzles shown vertically.
+    verbose=True,  # shows progress bar.
 )
 ```
 
@@ -101,6 +104,10 @@ The options for `color_to_play` are:
 - "black": The color to play will always be black; the color to play will not be specified in the label.
 - "white": The color to play will always be white; the color to play will not be specified in the label.
 - "random": The color to play will be random for each problem, and the label will say who's to move first.
+
+<br>
+
+The tsumego are prioritized to show up horizontally. If a puzzle is too thin, it won't be shown vertically because too many occurrences of this could make the PDF inefficient in using space. If you want to see thinner puzzles potentially flipped to be displayed vertically, then you need to lower the `ratio_to_flip_xy`. By default this is `5/6`, meaning the side lengths of the bounding box of a tsumego (all its stones and to the nearest corner) must have a ratio such that: `5/6` <= ratio <= `6/5`. The lower this fraction is, the more thinner puzzles you'll see potentially having their X/Y axes flipped.
 
 <br>
 <br>
