@@ -57,9 +57,11 @@ def _create_stone_graphic(stone_size_px, is_black: bool, outline_thickness_in):
     )
 
 
-def _create_star_point_graphic(stone_size_px, star_point_radius_in):
+def _create_star_point_graphic(star_point_size, factor):
     """Returns a PIL image with the stone graphic inside."""
-    SCALE = 4
+    
+
+    """SCALE = 4
 
     # dims of output image.
     w = stone_size_px + _GRAPHIC_PADDING_PX * 2
@@ -87,26 +89,43 @@ def _create_star_point_graphic(stone_size_px, star_point_radius_in):
     return large_image.resize(
         (int(w), int(h)),
         Image.Resampling.LANCZOS,
+    )"""
+    star_point_image = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(star_point_image)
+    radius = 256 * factor  # determines the size of the star point.
+    bbox = (256 - radius, 256 - radius, 256 + radius, 256 + radius)
+    draw.ellipse(bbox, fill=LINE_COLOR)
+
+    return star_point_image.resize(
+        (star_point_size, star_point_size), resample=Image.LANCZOS
     )
 
-
 _STAR_POINT_GRAPHIC = None
-
+_LAST_CELL_SIZE = None
 
 def draw_board(width_in, line_width_in=1 / 96, star_point_radius_in=1 / 48):
     """Returns a drawn Go board."""
-    global _STAR_POINT_GRAPHIC
+    global _STAR_POINT_GRAPHIC, _LAST_CELL_SIZE, _LAST_FACTOR
 
-    cell_size_px = width_in / 19 * DPI
+    cell_size_px = int(width_in / 19 * DPI)
 
-    if _STAR_POINT_GRAPHIC is None:
-        _STAR_POINT_GRAPHIC = _create_star_point_graphic(
-            cell_size_px, star_point_radius_in
-        )
-
+    
     line_width = max(1, int(line_width_in * DPI))
 
     OFF = BOARD_PADDING_PX
+
+    cell_size_in = (width_in / 19)
+    factor = (star_point_radius_in * 2 / cell_size_in)
+
+    if line_width % 2 == 1:
+        star_point_size = cell_size_px + (1 - (cell_size_px % 2))
+        px_offset = 0
+    else:
+        star_point_size = cell_size_px + (cell_size_px % 2)
+        px_offset = 1 - cell_size_px % 2
+
+    if _STAR_POINT_GRAPHIC is None or _STAR_POINT_GRAPHIC.size[0] != star_point_size:
+        _STAR_POINT_GRAPHIC = _create_star_point_graphic(star_point_size, factor)
 
     width = int(width_in * DPI) + OFF * 2
     height = int(width_in * DPI) + OFF * 2
@@ -145,21 +164,23 @@ def draw_board(width_in, line_width_in=1 / 96, star_point_radius_in=1 / 48):
 
     for x, y in STAR_POINTS:
         if cell_size_px >= ANTIALIAS_SIZE:
-            draw_x = int(x * cell_size_px) - _GRAPHIC_PADDING_PX + OFF
-            draw_y = int(y * cell_size_px) - _GRAPHIC_PADDING_PX + OFF
+            draw_x = int(x * cell_size_px) + OFF
+            draw_y = int(y * cell_size_px) + OFF
             comp.paste(
                 _STAR_POINT_GRAPHIC,
                 (draw_x, draw_y),
                 mask=_STAR_POINT_GRAPHIC,
             )
         else:
-            p_x = int(cell_size_px / 2 + x * cell_size_px) + OFF
-            p_y = int(cell_size_px / 2 + y * cell_size_px) + OFF
+            p_x = int(cell_size_px / 2 + x * cell_size_px) + OFF + (radius_px%2)
+            p_y = int(cell_size_px / 2 + y * cell_size_px) + OFF + (radius_px%2)
+            
+            r = radius_px + (1 - (radius_px % 2))
             bbox = (
                 p_x - radius_px,
                 p_y - radius_px,
-                p_x + radius_px + (radius_px % 2),
-                p_y + radius_px + (radius_px % 2),
+                p_x + radius_px + (line_width+1)%2,
+                p_y + radius_px + (line_width+1)%2,
             )
             draw.ellipse(bbox, fill=LINE_COLOR)
 
@@ -183,13 +204,12 @@ def _load_mark_image(stone_size_px, is_black: bool, solution_mark: str):
 _BLACK_STONE_IMAGE = None
 _WHITE_STONE_IMAGE = None
 
-
 def draw_stone(board, x, y, stone_size_px, is_black: bool, outline_thickness_in):
     """Draws a stone graphic at the given board coordinate."""
 
     # loads stone graphics if they haven't been loaded yet.
     global _BLACK_STONE_IMAGE, _WHITE_STONE_IMAGE
-    if _BLACK_STONE_IMAGE is None:
+    if _BLACK_STONE_IMAGE is None or _BLACK_STONE_IMAGE.size[0] != stone_size_px:
         _BLACK_STONE_IMAGE = _create_stone_graphic(
             stone_size_px,
             is_black=True,
@@ -212,10 +232,12 @@ _SOLUTION_MARK = None
 _SOLUTION_BLACK_IMAGE = None
 _SOLUTION_WHITE_IMAGE = None
 
-
 def draw_mark(board, x, y, stone_size_px, is_black: bool, solution_mark: str):
     global _SOLUTION_MARK, _SOLUTION_BLACK_IMAGE, _SOLUTION_WHITE_IMAGE
-    if _SOLUTION_MARK != solution_mark:
+    if (
+        _SOLUTION_MARK != solution_mark 
+        or _SOLUTION_BLACK_IMAGE.size[0] != stone_size_px
+    ):
         _SOLUTION_BLACK_IMAGE = _load_mark_image(
             stone_size_px, is_black=True, solution_mark=solution_mark
         )

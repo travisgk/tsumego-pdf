@@ -440,4 +440,7 @@ def create_pdf(
                 f"{problems_out_path} and {solutions_out_path}.\n"
             )
         else:
-            print(f"Tsumego has been saved to {problems_out_path}.\n")
+            print(
+                "A collection of tsumego has been "
+                f"saved to {problems_out_path}.\n"
+            )
