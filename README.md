@@ -11,7 +11,7 @@ This tool generates a PDF of selected problems from any of the following tsumego
 ![Tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/outputs.png?raw=true)
 The problems by default are flipped around random.<br>This program will also create a parallel PDF which will contain the answers to the selected problems (if solutions are available for the collection).
 
-See output similar to the screenshot above in the [the example PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego.pdf) and its corresponding [answers PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego-key.pdf).
+See output similar to the screenshot above in the [the example PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-a.pdf) and its corresponding [answers PDF](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-a-key.pdf).
 
 <br>
 
@@ -33,7 +33,7 @@ You will need Pillow and ReportLab to run this program.
 ## Usage
 The following code selects 100 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and 100 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate*, mixes them all together, and then saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided.
 
-This provides [a PDF with the tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/random-200-mix.pdf) and [a companion PDF with the solutions](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/random-200-mix-key.pdf).
+This provides [a PDF with the tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-c.pdf) and [a companion PDF with the solutions](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-c-key.pdf).
 
 ```
 import random
