@@ -31,12 +31,11 @@ You will need Pillow and ReportLab to run this program.
 <br>
 
 ## Usage
-The following code selects 100 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary* and 100 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Intermediate*, mixes them all together, and then saves a PDF with invisible labels and another PDF with the problems labelled and solutions provided.
+The following code selects creates a packet of 120 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary*, where some particular problems are explicitly set to appear somewhere.
 
 This provides [a PDF with the tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-c.pdf) and [a companion PDF with the solutions](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-c-key.pdf).
 
 ```
-from datetime import datetime
 import random
 import reportlab.lib.pagesizes
 import tsumego_pdf
@@ -61,14 +60,9 @@ problem_selections = [(num, collection_name) for num in problem_nums]
 random.shuffle(problem_selections)
 
 # writes the PDF.
-now = datetime.now()
-date_time_str = now.strftime("%Y-%m-%d %H%M%S")
-
 tsumego_pdf.create_pdf(
     problem_selections,
     page_size,
-    problems_out_path=f"tsumego-{date_time_str}.pdf",
-    solutions_out_path=f"tsumego-{date_time_str}-key.pdf",
     color_to_play="black",
     landscape=False,
     num_columns=2,
@@ -84,8 +78,6 @@ tsumego_pdf.create_pdf(
     verbose=True,  # shows progress bar.
 )
 ```
-
-Setting `problem_nums` to `None` will select all problems in the desired collection.
 
 <br>
 <br>
@@ -108,6 +100,10 @@ The options for `color_to_play` are:
 <br>
 
 The tsumego are prioritized to show up horizontally. If a puzzle is too thin, it won't be shown vertically because too many occurrences of this could make the PDF inefficient in using space. If you want to see thinner puzzles potentially flipped to be displayed vertically, then you need to lower the `ratio_to_flip_xy`. By default this is `5/6`, meaning the side lengths of the bounding box of a tsumego (all its stones and to the nearest corner) must have a ratio such that: `5/6` <= ratio <= `6/5`. The lower this fraction is, the more thinner puzzles you'll see potentially having their X/Y axes flipped.
+
+<br>
+
+Setting `problem_nums` to `None` will select all problems in the desired collection. This, however, will not randomize their order.
 
 <br>
 <br>
