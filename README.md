@@ -33,7 +33,7 @@ You will need Pillow and ReportLab to run this program.
 ## Usage
 The following code selects creates a packet of 120 random problems from *Cho Chikun's Encyclopedia of Life &amp; Death: Elementary*, where some particular problems are explicitly set to appear somewhere.
 
-This provides [a PDF with the tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-c.pdf) and [a companion PDF with the solutions](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/demo-c-key.pdf).
+This provides [a PDF with the tsumego](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego%202024-12-23%20130759.pdf) and [a companion PDF with the solutions](https://github.com/travisgk/tsumego-pdf/blob/main/example-outputs/tsumego%202024-12-23%20130759%20key.pdf).
 
 ```
 import random
