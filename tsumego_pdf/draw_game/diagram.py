@@ -68,6 +68,7 @@ def make_diagram(
     outline_thickness_in=1 / 128,
     line_width_in=1 / 96,
     star_point_radius_in=1 / 48,
+    ratio_to_flip_xy=5/6,
 ):
     """
     Returns a PIL Image of a Life and Death diagram for the desired problem.
@@ -117,6 +118,10 @@ def make_diagram(
         write_collection_label (bool): if True, the collection name is shown.
         line_width_in (num): the width in inches of the board lines.
         star_point_radius_in (num): the radius of the star points in inches.
+        ratio_to_flip_xy (num): the ratio a puzzle must fall within 
+                                to have its X/Y axes considered possibly randomly flipped.
+                                5/6 assumes the bbox of the puzzle's side lengths have a ratio
+                                that falls between 5/6 and 6/5.
     """
 
     """
@@ -138,6 +143,13 @@ def make_diagram(
         line_width_in=line_width_in,
         star_point_radius_in=star_point_radius_in,
     )
+
+    if ratio_to_flip_xy < 1:
+        min_ratio_to_flip_xy = ratio_to_flip_xy
+        max_ratio_to_flip_xy = 1 / ratio_to_flip_xy
+    else:
+        min_ratio_to_flip_xy = 1 / ratio_to_flip_xy
+        max_ratio_to_flip_xy = ratio_to_flip_xy
 
     """
     Step 2) Problem retrieval.
@@ -244,7 +256,7 @@ def make_diagram(
     """
     # flipping the X and Y axes is forbidden/enforced depending on
     # the bbox attributes.
-    if 0.8 <= abs(max_x / max_y) <= 1.2:
+    if min_ratio_to_flip_xy <= abs(max_x / max_y) <= max_ratio_to_flip_xy:
         # the bbox is relatively square, so it won't be visually jarring
         # to let it be flipped diagonally either way.
         pass
@@ -290,12 +302,12 @@ def make_diagram(
         is_left = not is_left
         marks = [(18 - x, y) for x, y in marks]
 
+    # counts the number of solutions this problem has.
     num_solutions = 0
     for y, line in enumerate(lines):
         for x, c in enumerate(line):
             if c == "X":
                 num_solutions += 1
-                #
 
     is_black = color_to_play == "black" or (
         color_to_play == "default" and default_to_play == "black"

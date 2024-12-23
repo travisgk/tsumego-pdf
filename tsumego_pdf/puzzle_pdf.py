@@ -73,6 +73,7 @@ def create_pdf(
     line_width_in=1 / 96,
     star_point_radius_in=1 / 48,
     draw_bbox_around_diagrams: bool = False,
+    ratio_to_flip_xy=5/6,
     verbose: bool = True,
 ):
     """
@@ -151,6 +152,10 @@ def create_pdf(
         draw_bbox_around_diagrams (bool): if True, a thin rectangle will be drawn
                                           around each diagram. this is useful
                                           for creating stand-alone diagrams.
+        ratio_to_flip_xy (num): the ratio a puzzle must fall within 
+                        to have its X/Y axes considered possibly randomly flipped.
+                        5/6 assumes the bbox of the puzzle's side lengths have a ratio
+                        that falls between 5/6 and 6/5.
         verbose (bool): if True, a progress bar is displayed.
     """
     PAGE_NUM_TEXT_SIZE_IN = 0.125
@@ -163,13 +168,13 @@ def create_pdf(
     Step 1) Opens ReportLab to create PDFs.
     """
     now = datetime.now()
-    date_time_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    date_time_str = now.strftime("%Y-%m-%d %H%M%S")
     if problems_out_path is None:
         now = datetime.now()
-        problems_out_path = f"{date_time_str} tsumego problems.pdf"
+        problems_out_path = f"tsumego {date_time_str}.pdf"
 
     if create_key and solutions_out_path is None:
-        problems_out_path = f"{date_time_str} tsumego solutions.pdf"
+        solutions_out_path = f"tsumego {date_time_str} key.pdf"
 
     if landscape:
         page_size = (max(page_size), min(page_size))
@@ -311,6 +316,7 @@ def create_pdf(
             outline_thickness_in=outline_thickness_in,
             line_width_in=line_width_in,
             star_point_radius_in=star_point_radius_in,
+            ratio_to_flip_xy=ratio_to_flip_xy,
         )
 
         if create_key:
@@ -336,6 +342,7 @@ def create_pdf(
                 outline_thickness_in=outline_thickness_in,
                 line_width_in=line_width_in,
                 star_point_radius_in=star_point_radius_in,
+                ratio_to_flip_xy=ratio_to_flip_xy,
             )
         else:
             key_diagram = None

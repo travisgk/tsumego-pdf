@@ -176,16 +176,14 @@ def demo_d():
     which contains possible solutions.
     """
     page_size = reportlab.lib.pagesizes.letter  # American paper size.
-    margin_in = {"left": 0.6, "top": 0.6, "right": 0.6, "bottom": 1.0}
+    margin_in = {"left": 0.6, "top": 0.6, "right": 0.6, "bottom": 0.6}
 
     collection_name = "cho-elementary"
     problem_nums = [
-        22, 80, 205,
-        115, 190, 223,
-        21, 160, 266,
-        235, 275, 79,
-        218, 231, 187,
+        637, 416, 127, 476, 183, 521, 231, 293, 627,
+        434, 288, 725, 523, 316, 422, 99, 657, 114,
     ]
+
     problem_selections = [(num, collection_name) for num in problem_nums]
     random.shuffle(problem_selections)
 
@@ -199,18 +197,18 @@ def demo_d():
         landscape=False,
         num_columns=1,
         column_spacing_in=2.5,
-        spacing_below_in=1,
+        spacing_below_in=0,
         placement_method="block",
         include_text=False,
         create_key=True,
-        random_flip=False,
-        draw_sole_solving_stone=True,
-        solution_mark="star",
+        random_flip=True,
+        draw_sole_solving_stone=False,
+        solution_mark="big-star",
         problem_text_rgb=(255, 255, 255),
         solution_text_rgb=(128, 128, 128),
         include_page_num=False,
         display_width=12,
-        outline_thickness_in=1 / 32,
+        outline_thickness_in=1 / 24,
         line_width_in=1 / 36,
         star_point_radius_in=1 / 16,
         draw_bbox_around_diagrams=True,
