@@ -253,9 +253,10 @@ def make_diagram(
         # the height isn't cropped
         # if stones are already taking up most of the board.
         top = 0
-        bottom = h
+        bottom = h - 1
 
-    board = board.crop((left, top, right, bottom))
+    if not(left <= 0 and top <= 0 and bottom >= h - 1 and right >= w - 1):
+        board = board.crop((left, top, right, bottom))
 
     """
     Step 5) Creates the image text for below the diagram.

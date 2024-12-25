@@ -279,6 +279,21 @@ def _write_images_to_booklet_pdf(
 
     temp_paths = []
 
+    dummy_image = Image.new("RGB", (30, 30), (255, 255, 255))
+    dummy_draw = ImageDraw.Draw(dummy_image)
+    dummy_draw.ellipse((2, 2, 28, 28), fill=(245, 245, 245))
+
+    dummy_image = dummy_image.resize(
+        (int(10), int(10)),
+        Image.Resampling.LANCZOS,
+    )
+
+    with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+        dummy_temp_path = temp_file.name
+
+    dummy_image.save(dummy_temp_path)
+    temp_paths.append(dummy_temp_path)
+
     if booklet_cover is not None:
         cover_image = draw_cover(img_w, img_h, booklet_cover)
         with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
@@ -289,18 +304,6 @@ def _write_images_to_booklet_pdf(
         out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
         out_pdf.showPage()  # blank for double-sided cover.
 
-        dummy_image = Image.new("RGB", (30, 30), (255, 255, 255))
-        dummy_draw = ImageDraw.Draw(dummy_image)
-        dummy_draw.ellipse((2, 2, 28, 28), fill=(245, 245, 245))
-
-        dummy_image = dummy_image.resize(
-            (int(10), int(10)),
-            Image.Resampling.LANCZOS,
-        )
-
-        with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
-            dummy_temp_path = temp_file.name
-        dummy_image.save(dummy_temp_path)
         out_pdf.drawImage(
             dummy_temp_path,
             ((img_w / 300 * 72) * 0.5) + 5,
@@ -309,7 +312,6 @@ def _write_images_to_booklet_pdf(
             height=10,
         )
         out_pdf.showPage()
-        temp_paths.append(dummy_temp_path)
 
     num_pages = len(render_order)
     for i, row in enumerate(render_order):
@@ -325,6 +327,14 @@ def _write_images_to_booklet_pdf(
             page_image.paste(left_image, (0, 0))
         if right_image is not None:
             page_image.paste(right_image, (img_w - right_image.size[0], 0))
+        if left_image is None and right_image is None:
+            out_pdf.drawImage(
+                dummy_temp_path,
+                ((img_w / 300 * 72) * 0.5) + 5,
+                ((img_h / 300 * 72) * 0.5) - 5,
+                width=10,
+                height=10,
+            )
 
         with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
             temp_path = temp_file.name
@@ -867,8 +877,8 @@ def create_pdf(
             key_process = multiprocessing.Process(
                 target=_write_images_to_booklet_pdf,
                 args=(
-                    prob_temp_paths,
-                    problems_out_path,
+                    key_temp_paths,
+                    solutions_out_path,
                     page_size,
                     booklet_center_padding_in,
                     booklet_key_in_printers_spread,
