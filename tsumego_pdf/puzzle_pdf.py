@@ -1,18 +1,159 @@
+import multiprocessing
+from functools import partial
 from datetime import datetime
 import os
 import sys
 import tempfile
 import time
+import numpy as np
 from PIL import Image, ImageDraw
 import reportlab.lib.pagesizes
 from reportlab.pdfgen import canvas
+from tsumego_pdf.draw_game.board_graphics import (
+    BOARD_PADDING_PX,
+    TEXT_PADDING_TOP_IN,
+    TEXT_PADDING_BOTTOM_IN,
+    draw_cover,
+)
 from tsumego_pdf.draw_game.diagram import *
 from tsumego_pdf.puzzles.problems_json import GOKYO_SHUMYO_SECTIONS
+
+_MAX_PROCESSES = 16
+_PAGE_NUM_TEXT_SIZE_IN = 0.125
+_PAGE_NUM_RGB = (128, 128, 128)
+
+_counter = multiprocessing.Value("i", 0)  # "i" means it's an integer.
+
+
+class DiagramTemplate:
+    def __init__(
+        self,
+        collection_name=None,
+        section_name=None,
+        problem_num=None,
+        flip_x: bool = False,
+        flip_y: bool = False,
+        flip_xy: bool = False,
+        color_to_play: str = "default",
+        is_random_color: bool = False,
+        ratio_to_flip_xy=4 / 6,
+        stone_size_px: int = 32,
+        display_width: int = 19,
+        include_text: bool = True,
+        text_height_in=0.21,
+    ):
+        self.collection_name = collection_name
+        self.section_name = section_name
+        self.problem_num = problem_num
+        self.color_to_play = color_to_play
+        self.is_random_color = is_random_color
+        self.x = 0
+        self.y = 0
+
+        problem = get_problem(collection_name, section_name, problem_num)
+        self.lines = problem["lines"]
+        width_stones = problem["show-width"]
+        height_stones = problem["show-height"]
+
+        if ratio_to_flip_xy < 1:
+            min_ratio_to_flip_xy = ratio_to_flip_xy
+            max_ratio_to_flip_xy = 1 / ratio_to_flip_xy
+        else:
+            min_ratio_to_flip_xy = 1 / ratio_to_flip_xy
+            max_ratio_to_flip_xy = 1
+
+        if (
+            min_ratio_to_flip_xy
+            <= abs(width_stones / height_stones)
+            <= max_ratio_to_flip_xy
+        ):
+            # the bbox is relatively square, so it won't be visually jarring
+            # to let it be flipped diagonally either way.
+            pass
+        elif width_stones > display_width - 1:
+            # if the bbox of the stones goes beyond the display width,
+            # then the diagram will forcibly be flipped diagonally
+            # in order to fit within the desired display with.
+            flip_xy = True
+        elif width_stones >= 5:
+            # narrow and small puzzles aren't flipped XY
+            # because it's too visually jarring.
+            flip_xy = False
+
+        self.ratio_to_flip_xy = ratio_to_flip_xy
+
+        width_px = (width_stones + 1) * stone_size_px + BOARD_PADDING_PX * 2
+        height_px = (height_stones + 1) * stone_size_px + BOARD_PADDING_PX * 2
+
+        self.flip_x = flip_x
+        self.flip_y = flip_y
+        self.flip_xy = flip_xy
+
+        if flip_xy:
+            placeholder = width_px
+            width_px = height_px
+            height_px = placeholder
+
+        width_px = display_width * stone_size_px + BOARD_PADDING_PX * 2
+
+        if include_text:
+            height_px += int(
+                (TEXT_PADDING_TOP_IN + text_height_in + TEXT_PADDING_BOTTOM_IN) * DPI
+            )
+
+        self.size = (width_px, height_px)
+
+
+class PageTemplate:
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        include_page_num: bool,
+        page_num: int,
+    ):
+        self.width = width
+        self.height = height
+        self.page_num = page_num
+        self.diagrams = []
+        self._diagrams_by_col = {}
+
+    def paste(self, diagram_template, pos, col):
+        diagram_template.x = pos[0]
+        diagram_template.y = pos[1]
+        self.diagrams.append(diagram_template)
+        if self._diagrams_by_col.get(col) is None:
+            self._diagrams_by_col[col] = []
+        self._diagrams_by_col[col].append(diagram_template)
+
+    def space_diagrams_apart(self, start_y, end_y, block: bool, stone_size_px):
+        for col in self._diagrams_by_col.keys():
+            diagrams = self._diagrams_by_col[col]
+
+            if len(diagrams) < 2:
+                continue
+
+            total_box_height = np.sum(d.size[1] for d in diagrams)
+            col_height = end_y - start_y
+            empty_space = col_height - total_box_height
+            spacing = empty_space / (len(diagrams) - 1)
+
+            current_y = start_y
+            for diagram in diagrams:
+                if block:
+                    diagram.y = int(
+                        stone_size_px * (int(current_y / stone_size_px) + 1)
+                    )
+                else:
+                    diagram.y = int(current_y)
+                current_y += diagram.size[1]
+                current_y += spacing
 
 
 def _progress_bar(
     percent_done,
     est_seconds_left=None,
+    prefix: str = "",
     length=50,
     fill="█",
     print_end="\r",
@@ -28,7 +169,7 @@ def _progress_bar(
         print_end (str): ending character (default is a carriage return).
     """
     if est_seconds_left is None:
-        prefix = "        "
+        time_prefix = "        "
     else:
         seconds = round(est_seconds_left)
         minutes = seconds // 60
@@ -36,13 +177,270 @@ def _progress_bar(
 
         seconds = seconds % 60
         minutes = minutes % 60
-        prefix = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        time_prefix = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+    percent_done = max(0, percent_done)
+    percent_done = min(1, percent_done)
 
     filled_length = int(length * percent_done) if percent_done != 0 else 0
     bar = fill * filled_length + "-" * (length - filled_length)
-    sys.stdout.write(f"\r{prefix} |{bar}| {percent_done*100:.1f}%")
+    sys.stdout.write(f"\r{prefix:<10} {time_prefix} |{bar}| {percent_done*100:.1f}%")
     sys.stdout.flush()
     sys.stdout.write(print_end)
+
+
+def _save_page_to_temp(page):
+    """Saves the page to a temp file and returns the file path."""
+    with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+        temp_path = temp_file.name
+    page.save(temp_path)
+
+    return temp_path
+
+
+def _write_images_to_pdf(
+    paths: list,
+    out_path: str,
+    paper_size,  # 72 DPI
+):
+    start_time = time.time()
+    out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
+
+    with Image.open(paths[0]) as img:
+        img_w, img_h = img.size
+    scale_x = paper_size[0] / img_w
+    scale_y = paper_size[1] / img_h
+    scale = min(scale_x, scale_y)
+
+    out_w = img_w * scale
+    out_h = img_h * scale
+
+    num_pages = len(paths)
+
+    for i, path in enumerate(paths):
+        out_pdf.drawImage(path, 0, 0, width=out_w, height=out_h)
+        if i < len(paths) - 1:
+            out_pdf.showPage()
+
+        percent_done = (i + 1) / num_pages
+        elapsed = time.time() - start_time
+        avg_duration = elapsed / (i + 1)
+        remaining_processes = num_pages - (i + 1)
+        est = remaining_processes * avg_duration
+
+        _progress_bar(percent_done, est, prefix="2) Save")
+
+    out_pdf.save()
+
+
+def _write_images_to_booklet_pdf(
+    paths: list,
+    out_path: str,
+    paper_size,  # 72 DPI
+    booklet_center_padding_in,
+    printers_spread: bool,
+    booklet_cover: str,
+):
+    start_time = time.time()
+
+    img_paths = paths[:]
+    out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
+
+    img_w = int((paper_size[0] / 72) * DPI)
+    img_h = int((paper_size[1] / 72) * DPI)
+
+    count = len(paths)
+    papers_needed = (count - 1) // 4 + 1
+
+    num_total_pages = papers_needed * 4
+
+    needed_blank_pages = num_total_pages - count
+    for _ in range(needed_blank_pages):
+        img_paths.append(None)
+
+    render_order = []
+    if printers_spread:
+        for i in range(num_total_pages // 2):
+            if i % 2 == 0:
+                render_order.append((num_total_pages - 1 - i, i))
+            else:
+                render_order.append((i, num_total_pages - 1 - i))
+    else:
+        render_order.append((num_total_pages - 1, 0))
+        for i in range(1, num_total_pages - 1, 2):
+            render_order.append((i, i + 1))
+
+    scale_x = paper_size[0] / img_w
+    scale_y = paper_size[1] / img_h
+    scale = min(scale_x, scale_y)
+
+    out_w = img_w * scale
+    out_h = img_h * scale
+
+    temp_paths = []
+
+    if booklet_cover is not None:
+        cover_image = draw_cover(img_w, img_h, booklet_cover)
+        with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+            temp_path = temp_file.name
+        cover_image.save(temp_path)
+        temp_paths.append(temp_path)
+
+        out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
+        out_pdf.showPage()  # blank for double-sided cover.
+
+        dummy_image = Image.new("RGB", (30, 30), (255, 255, 255))
+        dummy_draw = ImageDraw.Draw(dummy_image)
+        dummy_draw.ellipse((2, 2, 28, 28), fill=(245, 245, 245))
+
+        dummy_image = dummy_image.resize(
+            (int(10), int(10)),
+            Image.Resampling.LANCZOS,
+        )
+
+        with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+            dummy_temp_path = temp_file.name
+        dummy_image.save(dummy_temp_path)
+        out_pdf.drawImage(
+            dummy_temp_path,
+            ((img_w / 300 * 72) * 0.5) + 5,
+            ((img_h / 300 * 72) * 0.5) - 5,
+            width=10,
+            height=10,
+        )
+        out_pdf.showPage()
+        temp_paths.append(dummy_temp_path)
+
+    num_pages = len(render_order)
+    for i, row in enumerate(render_order):
+        left_element, right_element = row
+        left_path, right_path = img_paths[left_element], img_paths[right_element]
+
+        left_image = Image.open(left_path) if left_path is not None else None
+        right_image = Image.open(right_path) if right_path is not None else None
+
+        page_image = Image.new("RGB", (img_w, img_h), (255, 255, 255))
+
+        if left_image is not None:
+            page_image.paste(left_image, (0, 0))
+        if right_image is not None:
+            page_image.paste(right_image, (img_w - right_image.size[0], 0))
+
+        with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+            temp_path = temp_file.name
+        page_image.save(temp_path)
+        temp_paths.append(temp_path)
+
+        out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
+        if i < len(render_order) - 1:
+            out_pdf.showPage()
+
+        percent_done = (i + 1) / num_pages
+        elapsed = time.time() - start_time
+        avg_duration = elapsed / (i + 1)
+        remaining_processes = num_pages - (i + 1)
+        est = remaining_processes * avg_duration
+
+        _progress_bar(percent_done, est, prefix="2) Save")
+
+    out_pdf.save()
+
+    for path in temp_paths:
+        os.remove(path)
+
+
+def _init_counter(shared_counter):
+    global _counter
+    _counter = shared_counter
+
+
+def _render_page(
+    page_template,
+    num_pages: int,
+    start_time,
+    create_key: bool,
+    diagram_width_in,
+    page_width_in,
+    page_height_in,
+    include_text: bool,
+    show_problem_num: bool,
+    force_color_to_play: bool,
+    draw_sole_solving_stone: bool,
+    solution_mark: str,
+    text_rgb: tuple,
+    text_height_in,
+    include_page_num: bool,
+    display_width: int,
+    write_collection_label: bool,
+    outline_thickness_in,
+    line_width_in,
+    star_point_radius_in,
+    ratio_to_flip_xy,
+    bottom_margin,
+    booklet_center_padding_in,
+):
+    global _counter
+    page = Image.new(
+        "RGB", (int(page_width_in * DPI), int(page_height_in * DPI)), (255, 255, 255)
+    )
+
+    for diagram_template in page_template.diagrams:
+        diagram = make_diagram(
+            diagram_width_in,
+            problem_num=diagram_template.problem_num,
+            collection_name=diagram_template.collection_name,
+            section_name=diagram_template.section_name,
+            color_to_play=diagram_template.color_to_play,
+            is_random_color=diagram_template.is_random_color,
+            flip_xy=diagram_template.flip_xy,
+            flip_x=diagram_template.flip_x,
+            flip_y=diagram_template.flip_y,
+            include_text=include_text,
+            show_problem_num=show_problem_num,
+            force_color_to_play=force_color_to_play,
+            create_key=create_key,
+            draw_sole_solving_stone=draw_sole_solving_stone,
+            solution_mark=solution_mark,
+            text_rgb=text_rgb,
+            text_height_in=text_height_in,
+            display_width=display_width,
+            write_collection_label=write_collection_label,
+            outline_thickness_in=outline_thickness_in,
+            line_width_in=line_width_in,
+            star_point_radius_in=star_point_radius_in,
+            ratio_to_flip_xy=ratio_to_flip_xy,
+        )
+
+        page.paste(diagram, (diagram_template.x, diagram_template.y))
+
+    if include_page_num:
+        page_num = create_text_image(
+            str(page_template.page_num), _PAGE_NUM_RGB, _PAGE_NUM_TEXT_SIZE_IN
+        )
+
+        offset = -(booklet_center_padding_in * DPI / 2)
+
+        if page_template.page_num % 2 == 0:
+            offset *= -1
+
+        print_x = int((page.size[0] + offset) / 2 - page_num.size[0] / 2)
+        print_y = int(page.size[1] - bottom_margin)
+        page.paste(page_num, (print_x, print_y))
+
+    with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+        temp_path = temp_file.name
+    page.save(temp_path)
+
+    with _counter.get_lock():
+        _counter.value += 1
+        percent_done = (_counter.value + 2) / num_pages
+        elapsed = time.time() - start_time
+        avg_duration = elapsed / (_counter.value + 1)
+        remaining_processes = num_pages - (_counter.value + 1)
+        est = remaining_processes * avg_duration
+        _progress_bar(percent_done, est, prefix="1) Render")
+
+    return temp_path
 
 
 def create_pdf(
@@ -51,6 +449,10 @@ def create_pdf(
     problems_out_path=None,
     solutions_out_path=None,
     margin_in={"left": 0.5, "top": 0.5, "right": 0.5, "bottom": 0.5},
+    is_booklet: bool = False,
+    booklet_key_in_printers_spread: bool = False,
+    booklet_center_padding_in=0,
+    booklet_cover: str = "chinese",
     color_to_play: str = "black",
     landscape: bool = False,
     num_columns: int = 2,
@@ -73,7 +475,7 @@ def create_pdf(
     line_width_in=1 / 96,
     star_point_radius_in=1 / 48,
     draw_bbox_around_diagrams: bool = False,
-    ratio_to_flip_xy=5/6,
+    ratio_to_flip_xy=5 / 6,
     verbose: bool = True,
 ):
     """
@@ -116,6 +518,14 @@ def create_pdf(
         solutions_out_path: the .pdf path for the output.
                             If None, the function will figure out some name.
         margin_in (dict): the print margin for each side of the page in inches.
+        is_booklet (bool): if True, the PDF for the tsumego
+                                        is formatted to print out
+                                        as a double-sided booklet (printer spread).
+                                        The PDF of the key will by default
+                                        be written for display on the computer (reader spread).
+        booklet_key_in_printers_spread (bool): if True, the key PDF is
+                                               made to be printed out.
+        booklet_center_padding_in (num): the added margin in the center of the booklet.
         color_to_play (str): "default", "black", "white" or "random".
         landscape (bool): if True, the paper is oriented landscape.
         num_columns (int): the number of columns used to print puzzles.
@@ -152,14 +562,14 @@ def create_pdf(
         draw_bbox_around_diagrams (bool): if True, a thin rectangle will be drawn
                                           around each diagram. this is useful
                                           for creating stand-alone diagrams.
-        ratio_to_flip_xy (num): the ratio a puzzle must fall within 
+        ratio_to_flip_xy (num): the ratio a puzzle must fall within
                         to have its X/Y axes considered possibly randomly flipped.
                         5/6 assumes the bbox of the puzzle's side lengths have a ratio
                         that falls between 5/6 and 6/5.
         verbose (bool): if True, a progress bar is displayed.
     """
-    PAGE_NUM_TEXT_SIZE_IN = 0.125
-    PAGE_NUM_RGB = (128, 128, 128)
+    global _counter
+    _counter = multiprocessing.Value("i", 0)
 
     num_diagrams_made = 0
     total_diagrams = len(problem_selections)
@@ -167,6 +577,8 @@ def create_pdf(
     """
     Step 1) Opens ReportLab to create PDFs.
     """
+    start_time = time.time()
+
     now = datetime.now()
     date_time_str = now.strftime("%Y-%m-%d %H%M%S")
     if problems_out_path is None:
@@ -181,22 +593,20 @@ def create_pdf(
     else:
         page_size = (min(page_size), max(page_size))
 
-    prob_pdf = canvas.Canvas(problems_out_path, pagesize=page_size)
-    if create_key:
-        solve_pdf = canvas.Canvas(solutions_out_path, pagesize=page_size)
-
     pdf_width, pdf_height = page_size
 
     """
     Step 2) Retrieves problems.
     """
-    problems = get_problems()
-    w_in, h_in = page_size[0] / 72, page_size[1] / 72
-    if landscape and w_in < h_in:
-        placeholder = w_in
-        w_in = h_in
-        h_in = placeholder
-    w, h = w_in * DPI, h_in * DPI
+    pdf_width_in, pdf_height_in = page_size[0] / 72, page_size[1] / 72
+
+    if is_booklet:
+        page_width_in = (pdf_width_in - booklet_center_padding_in) / 2
+    else:
+        page_width_in = pdf_width_in
+    page_height_in = pdf_height_in
+
+    w, h = page_width_in * DPI, page_height_in * DPI
 
     """
     Step 3) Calculates margins and column variables.
@@ -216,7 +626,7 @@ def create_pdf(
     spacing_below = spacing_below_in * DPI
 
     col_width_in = (
-        w_in
+        page_width_in
         - margin_in["left"]
         - margin_in["right"]
         - column_spacing_in * (num_columns - 1)
@@ -224,56 +634,26 @@ def create_pdf(
     col_width = col_width_in * DPI
     col_x = [int(m_l + i * (col_width + colspan)) for i in range(num_columns)]
 
-    num_pages = 0
+    stone_size_px = calc_stone_size(col_width_in, display_width)
+
+    num_pages = 1
     current_col = 0
     current_y = m_t
 
-    # generates the text image for the page number.
+    """
+    Step 4) Creates blank page templates.
+    """
+    # generates the text image for the page number
+    # to determine how much to change bottom margin.
     if include_page_num:
-        page_num = create_text_image(
-            str(num_pages + 1), PAGE_NUM_RGB, PAGE_NUM_TEXT_SIZE_IN
+        page_num_img = create_text_image(
+            str(num_pages + 1), _PAGE_NUM_RGB, _PAGE_NUM_TEXT_SIZE_IN
         )
-        m_b += page_num.size[1]
+        m_b += page_num_img.size[1]
 
-    page = Image.new("RGB", (int(w), int(h)), (255, 255, 255))
-    key_page = (
-        Image.new("RGB", (int(w), int(h)), (255, 255, 255)) if create_key else None
-    )
-
-    if include_page_num:
-        # adds page number.
-        page_num = create_text_image(
-            str(num_pages + 1), PAGE_NUM_RGB, PAGE_NUM_TEXT_SIZE_IN
-        )
-        print_x = int(page.size[0] / 2 - page_num.size[0] / 2)
-        print_y = int(h - m_b)
-        page.paste(page_num, (print_x, print_y))
-        if create_key:
-            key_page.paste(page_num, (print_x, print_y))
-
-    temp_paths = []
-
-    def write_page_to_pdf(page, pdf, show_page: bool = True):
-        with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
-            temp_path = temp_file.name
-        page.save(temp_path)
-        temp_paths.append(temp_path)
-
-        img_w, img_h = page.size
-        scale_x = pdf_width / img_w
-        scale_y = pdf_height / img_h
-        scale = min(scale_x, scale_y)
-
-        pdf.drawImage(
-            temp_path,
-            0,
-            0,
-            width=img_w * scale,
-            height=img_h * scale,
-        )
-        if show_page:
-            pdf.showPage()
-
+    """
+    Step 5) Begins creating diagrams for each problem.
+    """
     # determines if more than one collection is being used.
     collection_names = []
     for selection in problem_selections:
@@ -281,165 +661,263 @@ def create_pdf(
         if collection_name not in collection_names:
             collection_names.append(collection_name)
 
-    start_time = time.time()
-    longest_first_time = 0
+    write_collection_label = len(collection_names) > 1
+
+    page_templates = []
+    page = PageTemplate(
+        width=int(w),
+        height=int(h),
+        include_page_num=include_page_num,
+        page_num=num_pages,
+    )
+    num_pages += 1
 
     for selection in problem_selections:
         problem_num = selection[0]
         collection_name = selection[1]
         section_name = None if len(selection) <= 2 else selection[2]
 
+        problem_dict = get_problem(collection_name, section_name, problem_num)
+
         # determines how this puzzle will be randomly flipped.
         flip_xy = random.choice([True, False]) if random_flip else False
         flip_x = random.choice([True, False]) if random_flip else False
         flip_y = random.choice([True, False]) if random_flip else False
 
-        # solution_values = [False, True] if show_solution else [False]
-        # for show_solution in solution_values:
-        diagram = make_diagram(
-            col_width_in,
-            problem_num,
+        if color_to_play == "random":
+            is_random_color = True
+            color_selection = random.choice(["black", "white"])
+        else:
+            is_random_color = False
+            color_selection = color_to_play
+
+        diagram_template = DiagramTemplate(
             collection_name,
             section_name,
-            color_to_play=color_to_play,
-            flip_xy=flip_xy,
-            flip_x=flip_x,
-            flip_y=flip_y,
-            include_text=include_text,
-            show_problem_num=show_problem_num,
-            force_color_to_play=force_color_to_play,
-            create_key=False,
-            text_rgb=problem_text_rgb,
-            text_height_in=text_height_in,
-            display_width=display_width,
-            write_collection_label=len(collection_names) > 1,
-            outline_thickness_in=outline_thickness_in,
-            line_width_in=line_width_in,
-            star_point_radius_in=star_point_radius_in,
-            ratio_to_flip_xy=ratio_to_flip_xy,
+            problem_num,
+            flip_x,
+            flip_y,
+            flip_xy,
+            color_selection,
+            is_random_color,
+            ratio_to_flip_xy,
+            stone_size_px,
+            display_width,
+            include_text,
+            text_height_in,
         )
 
-        if create_key:
-            key_diagram = make_diagram(
-                col_width_in,
-                problem_num,
-                collection_name,
-                section_name,
-                color_to_play=color_to_play,
-                flip_xy=flip_xy,
-                flip_x=flip_x,
-                flip_y=flip_y,
-                include_text=include_text,
-                show_problem_num=show_problem_num,
-                force_color_to_play=force_color_to_play,
-                create_key=True,
-                draw_sole_solving_stone=draw_sole_solving_stone,
-                solution_mark=solution_mark,
-                text_rgb=solution_text_rgb,
-                text_height_in=text_height_in,
-                display_width=display_width,
-                write_collection_label=len(collection_names) > 1,
-                outline_thickness_in=outline_thickness_in,
-                line_width_in=line_width_in,
-                star_point_radius_in=star_point_radius_in,
-                ratio_to_flip_xy=ratio_to_flip_xy,
-            )
+        """
+        Step 6) Places diagrams in the templates.
+        """
+        next_y = current_y + diagram_template.size[1]
+
+        if "block" in placement_method:
+            paste_y = int(stone_size_px * (int(current_y / stone_size_px) + 1))
         else:
-            key_diagram = None
+            paste_y = int(current_y)
+        paste_next_y = paste_y + diagram_template.size[1]
 
-        num_diagrams_made += 1
+        if paste_next_y > h - m_b:
 
-        if verbose:
-            elapsed = time.time() - start_time
-            avg_diagram_time = elapsed / num_diagrams_made
-            num_remaining = total_diagrams - num_diagrams_made
-            est_seconds_left = num_remaining * avg_diagram_time
-
-            percent_done = num_diagrams_made / total_diagrams
-            if percent_done < 0.1:
-                est_seconds_left = None
-
-            _progress_bar(percent_done, est_seconds_left)
-
-        next_y = current_y + diagram.size[1]
-        if next_y > h - m_b:
             # page has been filled.
             current_col += 1
             current_y = m_t
 
             if current_col >= num_columns:
-                write_page_to_pdf(page, prob_pdf)
+                if "proportional" in placement_method:
+                    use_block = "block" in placement_method
+                    page.space_diagrams_apart(m_t, h - m_b, use_block, stone_size_px)
 
-                if create_key:
-                    write_page_to_pdf(key_page, solve_pdf)
+                page_templates.append(page)
+                page = PageTemplate(
+                    width=int(w),
+                    height=int(h),
+                    include_page_num=include_page_num,
+                    page_num=num_pages,
+                )
 
                 num_pages += 1
-
-                # creates a new blank page.
-                page = Image.new("RGB", (int(w), int(h)), (255, 255, 255))
-                if create_key:
-                    key_page = Image.new("RGB", (int(w), int(h)), (255, 255, 255))
-
-                if include_page_num:
-                    page_num = create_text_image(
-                        str(num_pages + 1), PAGE_NUM_RGB, PAGE_NUM_TEXT_SIZE_IN
-                    )
-                    print_x = int(page.size[0] / 2 - page_num.size[0] / 2)
-                    print_y = int(h - m_b)
-                    page.paste(page_num, (print_x, print_y))
-
-                    if create_key:
-                        key_page.paste(page_num, (print_x, print_y))
-
                 current_col = 0
 
-        if placement_method == "block":
-            stone_size_px = calc_stone_size(col_width_in, display_width)
+        if "block" in placement_method:
             paste_y = int(stone_size_px * (int(current_y / stone_size_px) + 1))
         else:
             paste_y = int(current_y)
 
-        def draw_bbox(page, diagram, x, y):
-            BBOX_RGB = (200, 200, 200)
-            # draws a bbox around diagram if enabled.
-            left = x - margin_in["left"] * DPI
-            top = y - margin_in["top"] * DPI
-            right = x + diagram.size[0] + margin_in["right"] * DPI
-            bottom = y + diagram.size[1] + margin_in["bottom"] * DPI
+        page.paste(diagram_template, (col_x[current_col], paste_y), current_col)
+        current_y += diagram_template.size[1] + spacing_below
 
-            page_draw = ImageDraw.Draw(page)
-            if draw_top:
-                page_draw.line((left, top, right, top), fill=BBOX_RGB, width=3)
-            page_draw.line((left, bottom, right, bottom), fill=BBOX_RGB, width=3)
-            page_draw.line((left, top, left, bottom), fill=BBOX_RGB, width=3)
-            page_draw.line((right, top, right, bottom), fill=BBOX_RGB, width=3)
+    if "proportional" in placement_method:
+        use_block = "block" in placement_method
+        page.space_diagrams_apart(m_t, h - m_b, use_block, stone_size_px)
 
-        page.paste(diagram, (col_x[current_col], paste_y))
+    page_templates.append(page)
 
-        if draw_bbox_around_diagrams:
-            draw_bbox(page, diagram, col_x[current_col], paste_y)
+    """
+    Step 7) Render pages from their templates using multiprocessing.
+    """
+    total_pages_to_print = num_pages * 2 if create_key else num_pages
 
-        if create_key:
-            key_page.paste(key_diagram, (col_x[current_col], paste_y))
-            if draw_bbox_around_diagrams:
-                draw_bbox(key_page, key_diagram, col_x[current_col], paste_y)
+    page_render_start = time.time()
 
-        current_y += diagram.size[1] + spacing_below
+    prob_temp_paths = []
+    key_temp_paths = []
 
-    write_page_to_pdf(page, prob_pdf, show_page=False)
-    prob_pdf.save()
+    problem_render_page_partial = partial(
+        _render_page,
+        num_pages=total_pages_to_print,
+        start_time=page_render_start,
+        create_key=False,
+        diagram_width_in=col_width_in,
+        page_width_in=page_width_in,
+        page_height_in=page_height_in,
+        include_text=include_text,
+        show_problem_num=show_problem_num,
+        force_color_to_play=force_color_to_play,
+        draw_sole_solving_stone=draw_sole_solving_stone,
+        solution_mark=solution_mark,
+        text_rgb=problem_text_rgb,
+        text_height_in=text_height_in,
+        include_page_num=include_page_num,
+        display_width=display_width,
+        write_collection_label=write_collection_label,
+        outline_thickness_in=outline_thickness_in,
+        line_width_in=line_width_in,
+        star_point_radius_in=star_point_radius_in,
+        ratio_to_flip_xy=ratio_to_flip_xy,
+        bottom_margin=m_b,
+        booklet_center_padding_in=booklet_center_padding_in,
+    )
 
     if create_key:
-        write_page_to_pdf(key_page, solve_pdf, show_page=False)
-        solve_pdf.save()
+        key_render_page_partial = partial(
+            _render_page,
+            start_time=page_render_start,
+            num_pages=total_pages_to_print,
+            create_key=True,
+            diagram_width_in=col_width_in,
+            page_width_in=page_width_in,
+            page_height_in=page_height_in,
+            include_text=include_text,
+            show_problem_num=show_problem_num,
+            force_color_to_play=force_color_to_play,
+            draw_sole_solving_stone=draw_sole_solving_stone,
+            solution_mark=solution_mark,
+            text_rgb=solution_text_rgb,
+            text_height_in=text_height_in,
+            include_page_num=include_page_num,
+            display_width=display_width,
+            write_collection_label=write_collection_label,
+            outline_thickness_in=outline_thickness_in,
+            line_width_in=line_width_in,
+            star_point_radius_in=star_point_radius_in,
+            ratio_to_flip_xy=ratio_to_flip_xy,
+            bottom_margin=m_b,
+            booklet_center_padding_in=booklet_center_padding_in,
+        )
 
-    # deletes page images now that the PDFs are complete.
-    for path in temp_paths:
-        os.remove(path)
+        with (
+            multiprocessing.Pool(
+                processes=_MAX_PROCESSES,
+                initializer=_init_counter,
+                initargs=(_counter,),
+            ) as pool_a,
+            multiprocessing.Pool(
+                processes=_MAX_PROCESSES,
+                initializer=_init_counter,
+                initargs=(_counter,),
+            ) as pool_b,
+        ):
+            # maps the partial function to the list of PageTemplate objects.
+            prob_temp_paths = pool_a.map(problem_render_page_partial, page_templates)
+            key_temp_paths = pool_b.map(key_render_page_partial, page_templates)
+    else:
+        with multiprocessing.Pool(
+            processes=_MAX_PROCESSES,
+            initializer=_init_counter,
+            initargs=(_counter,),
+        ) as pool:
+            # maps the partial function to the list of PageTemplate objects.
+            prob_temp_paths = pool.map(problem_render_page_partial, page_templates)
 
-    sys.stdout.write(f"\r" + " " * 70)
+    sys.stdout.write("\r" + " " * 80)
     sys.stdout.flush()
     sys.stdout.write("\r")
+
+    """
+    Step 8) The temporary images are used to create the PDFs.
+    """
+    prob_process = None
+    key_process = None
+    if is_booklet:
+        prob_process = multiprocessing.Process(
+            target=_write_images_to_booklet_pdf,
+            args=(
+                prob_temp_paths,
+                problems_out_path,
+                page_size,
+                booklet_center_padding_in,
+                True,
+                booklet_cover,
+            ),
+        )
+
+        if create_key:
+            key_process = multiprocessing.Process(
+                target=_write_images_to_booklet_pdf,
+                args=(
+                    prob_temp_paths,
+                    problems_out_path,
+                    page_size,
+                    booklet_center_padding_in,
+                    booklet_key_in_printers_spread,
+                    booklet_cover,
+                ),
+            )
+
+    else:
+        prob_process = multiprocessing.Process(
+            target=_write_images_to_pdf,
+            args=(
+                prob_temp_paths,
+                problems_out_path,
+                page_size,
+            ),
+        )
+
+        if create_key:
+            key_process = multiprocessing.Process(
+                target=_write_images_to_pdf,
+                args=(
+                    key_temp_paths,
+                    solutions_out_path,
+                    page_size,
+                ),
+            )
+
+    if key_process is not None:
+        prob_process.start()
+        key_process.start()
+        prob_process.join()
+        key_process.join()
+    else:
+        prob_process.start()
+        prob_process.join()
+
+    """
+    Step 9) Deletes resources and prints out a conclusive message.
+    """
+    for path in prob_temp_paths:
+        os.remove(path)
+
+    for path in key_temp_paths:
+        os.remove(path)
+
+    sys.stdout.write("\r" + " " * 80)
+    sys.stdout.flush()
+    sys.stdout.write("\r")
+
     if verbose:
         if create_key:
             print(
@@ -448,6 +926,5 @@ def create_pdf(
             )
         else:
             print(
-                "A collection of tsumego has been "
-                f"saved to {problems_out_path}.\n"
+                "A collection of tsumego has been " f"saved to {problems_out_path}.\n"
             )

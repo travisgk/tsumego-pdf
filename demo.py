@@ -2,6 +2,7 @@
 This file contains six different demos to produce PDFs.
 """
 
+import time
 import random
 import reportlab.lib.pagesizes
 import tsumego_pdf
@@ -25,9 +26,10 @@ The available collections are:
 
 
 def demo_a():
+    start_time = time.time()
     """
-    This example generates a PDF for US letter paper size
-    full of particular problems from 
+    This example generates a PDF that's a double-sided booklet 
+    made for US letter paper size that's full of particular problems from 
     Cho Chikun's Elementary Life & Death problems, where
     black is always the color to play.
 
@@ -37,39 +39,74 @@ def demo_a():
 
     page_size = reportlab.lib.pagesizes.letter  # American paper size.
 
-    
+    margin_in = {
+        "left": 0.5,
+        "right": 0.5,
+        "top": 0.5,
+        "bottom": 0.5,
+    }
+
+    # specifies particular problems.
     collection_name = "cho-elementary"
     problem_nums = [
-        17, 30, 38, 43, 45,
-        50, 54, 55, 60, 64,
-        65, 66, 67, 75, 76,
-        78, 80, 96, 97, 101,
+        657,
+        617,
+        490,
+        724,
+        719,
+        741,
+        564,
+        345,
+        34,
+        340,
+        470,
+        238,
+        370,
+        390,
+        747,
+        126,
+        810,
+        870,
     ]
+
+    # fills the list with other random problems until there are 35 total problems.
+    while len(problem_nums) < 35:
+        rand_num = random.randint(1, 900)
+        if rand_num not in problem_nums:
+            problem_nums.append(rand_num)
+
     problem_selections = [(num, collection_name) for num in problem_nums]
 
     tsumego_pdf.create_pdf(
         problem_selections,
         page_size,
+        margin_in=margin_in,
         problems_out_path="demo-a.pdf",
         solutions_out_path="demo-a-key.pdf",
         color_to_play="black",
-        landscape=False,
-        num_columns=2,
-        column_spacing_in=3,
-        spacing_below_in=1,
-        placement_method="block",
+        landscape=True,
+        num_columns=1,
+        column_spacing_in=1,
+        spacing_below_in=1 / 2,
+        placement_method="block-proportional",
         include_text=True,
         problem_text_rgb=(255, 255, 255),
         solution_text_rgb=(128, 128, 128),
-        include_page_num=True,
-        display_width=12,
+        include_page_num=False,
+        display_width=13,
         verbose=True,  # shows progress bar
+        is_booklet=True,
+        booklet_cover="japanese",
+        booklet_center_padding_in=4.25,
     )
+
+    elapsed = time.time() - start_time
+    print(f"that took {elapsed:.2f} seconds")
 
 
 def demo_b():
     """
-    This example generates a PDF for A4 size paper 
+    This example generates a PDF for A4 size paper
     with 100 random problems from the Gokyo Shumyo,
     where white is always the color to play.
     """
@@ -107,7 +144,7 @@ def demo_b():
         include_page_num=True,
         text_height_in=0.1,
         display_width=19,
-        star_point_radius_in=1/64,
+        star_point_radius_in=1 / 64,
         verbose=True,  # shows progress bar
     )
 
@@ -115,7 +152,7 @@ def demo_b():
 def demo_c():
     """
     This example generates a PDF for US letter paper size
-    full of a mix of 100 random problems from 
+    full of a mix of 100 random problems from
     Cho Chikun's Elementary Life & Death problems and 100 other
     random problems from Cho Chikun's Intermediate Life & Death problems.
     Black is always the color to play.
@@ -180,8 +217,24 @@ def demo_d():
 
     collection_name = "cho-elementary"
     problem_nums = [
-        637, 416, 127, 476, 183, 521, 231, 293, 627,
-        434, 288, 725, 523, 316, 422, 99, 657, 114,
+        637,
+        416,
+        127,
+        476,
+        183,
+        521,
+        231,
+        293,
+        627,
+        434,
+        288,
+        725,
+        523,
+        316,
+        422,
+        99,
+        657,
+        114,
     ]
 
     problem_selections = [(num, collection_name) for num in problem_nums]
@@ -264,7 +317,7 @@ def demo_e():
 
 def demo_f():
     """
-    This example generates a diagram and saves it 
+    This example generates a diagram and saves it
     from directly given LaTeX string.
     """
 
@@ -343,8 +396,8 @@ def demo_f():
 
 if __name__ == "__main__":
     demo_a()
-    # demo_b()
-    # demo_c()
-    # demo_d()
-    # demo_e()
-    # demo_f()
+    demo_b()
+    demo_c()
+    demo_d()
+    demo_e()
+    demo_f()

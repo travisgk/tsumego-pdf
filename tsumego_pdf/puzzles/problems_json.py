@@ -1,6 +1,8 @@
 import json
 import os
 
+_PROBLEMS = None
+
 
 def _flip_text_horizontally(problem_str: str):
     """
@@ -126,3 +128,100 @@ def create_problems_json(out_path: str):
         json.dump(
             problems, json_file, indent=4
         )  # 'indent' makes the file more readable
+
+
+def get_problems():
+    """Returns a dictionary containing all the Go problems."""
+    _load_problems()
+    return _PROBLEMS
+
+
+def _load_problems():
+    """Loads all the problems to memory if not done yet."""
+    global _PROBLEMS
+    if _PROBLEMS is not None:
+        return
+
+    local_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(local_dir, "puzzles", "go-problems.json")
+
+    if not os.path.exists(file_path):
+        create_problems_json(file_path)
+
+    with open(file_path, "r") as file:
+        _PROBLEMS = json.load(file)
+
+
+def get_problem(
+    collection_name=None, section_name=None, problem_num=None, latex_str=None
+):
+    """Returns a dictionary with information about a problem."""
+    _load_problems()
+
+    if collection_name is None and latex_str is None:
+        print(
+            "No problem was specified. make_diagram needs to be given a "
+            "problem selection or a LaTeX string."
+        )
+        return None
+
+    if collection_name is not None:
+        collection_name = collection_name.lower()
+        problem_collection = _PROBLEMS.get(collection_name)
+        if problem_collection is None:
+            print(
+                f"'{collection}'' is not an available collection. "
+                "Only the following are accepted:"
+            )
+            for key in _PROBLEMS.keys():
+                print(f'\t- "{key}"')
+
+            return None
+
+        if section_name is not None:
+            # the section name must be considered.
+            section = problem_collection.get(section_name)
+            if section is None:
+                print(
+                    f"The collection '{collection_name}' does not have "
+                    f"a section named {section_name}."
+                )
+                return None
+
+            lines = section.get(str(problem_num))
+            if lines is None:
+                print(
+                    f"The section '{section_name}' of {collection_name} "
+                    f"does not have a problem numbered #{problem_num}."
+                )
+                return None
+
+        else:
+            lines = problem_collection.get(str(problem_num))
+            if lines is None:
+                print(
+                    f"The collection '{collection_name}' does not have "
+                    f"a problem numbered #{problem_num}."
+                )
+                return None
+    else:
+        lines = latex_str
+
+    lines = lines.split(" ")
+    default_to_play = "black" if lines[0][0] == "B" else "white"
+    lines[0] = lines[0][1:]  # snips off the color-to-play info.
+
+    max_x = 0
+    max_y = 0
+    for y, line in enumerate(lines):
+        for x, c in enumerate(line):
+            if c in "@!":  # a stone.
+                max_x = max(max_x, x)
+                max_y = max(max_y, y)
+
+    return {
+        "show-width": max_x + 1,  # how many stones wide.
+        "show-height": max_y + 1,  # how many stones high.
+        "lines": lines,
+        "default-to-play": default_to_play,
+    }
