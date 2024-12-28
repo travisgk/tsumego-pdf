@@ -108,5 +108,24 @@ Setting `problem_nums` to `None` will select all problems in the desired collect
 <br>
 <br>
 
+## Creating Blank Templates for Print
+
+```
+tsumego_pdf.create_blank_template(
+    paper_size=reportlab.lib.pagesizes.letter,
+    landscape=True,
+    board_size=19,
+    board_width_in=2.653,
+    boards_per_col=3,  # width.
+    boards_per_row=2,  # height.
+    num_pages=1,
+    draw_bbox_around_diagrams=True,
+)
+```
+This will create a PDF of 3x2 board of grid size 19x19.
+
+<br>
+<br>
+
 ## Special Thanks
 These entries were provided by Vít Brunner's collection of problems on his website [tasuki.org](https://tsumego.tasuki.org/).
