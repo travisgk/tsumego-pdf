@@ -144,6 +144,7 @@ def create_portable_board(
     },
     board_size=19,
     fill_color=(0, 0, 0),
+    save_image: bool = False,
 ):
     Y_SCALE = 1.0421686747
     STONE_SIZE_IN = 0.8645833333333333
@@ -190,6 +191,10 @@ def create_portable_board(
         y_scale=Y_SCALE,
         fill_color=fill_color,
     )
+
+    if save_image:
+        out_img_path = out_path[:-4] + ".png"
+        board.save(out_img_path)
 
     """
     Step 2) Determines dimensions of the printout.
