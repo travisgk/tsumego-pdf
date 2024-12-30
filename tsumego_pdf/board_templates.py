@@ -149,7 +149,7 @@ def create_portable_board(
     Y_SCALE = 1.0421686747
     STONE_SIZE_IN = 0.8645833333333333
     LINE_WIDTH_IN = 1 / 48
-    STAR_POINT_RADIUS_IN = 1 / 16
+    STAR_POINT_RADIUS_IN = 5 / 64
 
     # the minimum required print margin. if the program has to use
     # multiple papers to print the board, then the normal given
