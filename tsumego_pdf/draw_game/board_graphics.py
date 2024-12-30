@@ -196,10 +196,10 @@ def draw_board(
     x_horiz_star_coords = []
     y_horiz_star_coords = []
 
-    if board_width >= 17 and center_point_x is not None:
+    if board_width >= 15 and center_point_x is not None:
         x_horiz_star_coords.append(center_point_x)
 
-    if board_height >= 17 and center_point_y is not None:
+    if board_height >= 15 and center_point_y is not None:
         y_horiz_star_coords.append(center_point_y)
 
     if board_width >= 12:
