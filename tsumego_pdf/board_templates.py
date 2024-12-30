@@ -194,7 +194,9 @@ def create_portable_board(
 
     if save_image:
         out_img_path = out_path[:-4] + ".png"
-        board.save(out_img_path)
+        new_w, new_h = int(board.size[0] * 0.25), int(board.size[1] * 0.25)
+        out_board = board.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        out_board.save(out_img_path)
 
     """
     Step 2) Determines dimensions of the printout.
