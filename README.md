@@ -82,6 +82,39 @@ tsumego_pdf.create_pdf(
 <br>
 <br>
 
+## Creating Blank Templates for Print
+
+```
+tsumego_pdf.create_blank_template(
+    paper_size=reportlab.lib.pagesizes.letter,
+    landscape=True,
+    board_size=19,
+    board_width_in=2.653,
+    boards_per_col=3,  # width.
+    boards_per_row=2,  # height.
+    num_pages=1,
+    draw_bbox_around_diagrams=True,
+)
+```
+This will create a PDF of 3x2 board of grid size 19x19.
+
+<br>
+<br>
+
+## Print a Go Board
+A Go board can be printed out to be used with actual Go stones. If you want to make a PDF, run:
+```
+tsumego_pdf.create_portable_board(
+    paper_size=reportlab.lib.pagesizes.letter,
+    landscape=True,
+    board_size=(13, 9),
+)
+```
+This will create a 13x9 Go board for a US letter paper size.
+
+<br>
+<br>
+
 ## Notes
 Problems **#218** and **#533** in the Elementary section of Cho Chikun's problems have been pointed out as unsolvable, so they've been tweaked for this repository. Problems **#344** and **#396** in the Intermediate section have been tweaked as well.
 
@@ -104,25 +137,6 @@ The tsumego are prioritized to show up horizontally. If a puzzle is too thin, it
 <br>
 
 Setting `problem_nums` to `None` will select all problems in the desired collection. This, however, will not randomize their order.
-
-<br>
-<br>
-
-## Creating Blank Templates for Print
-
-```
-tsumego_pdf.create_blank_template(
-    paper_size=reportlab.lib.pagesizes.letter,
-    landscape=True,
-    board_size=19,
-    board_width_in=2.653,
-    boards_per_col=3,  # width.
-    boards_per_row=2,  # height.
-    num_pages=1,
-    draw_bbox_around_diagrams=True,
-)
-```
-This will create a PDF of 3x2 board of grid size 19x19.
 
 <br>
 <br>
