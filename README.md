@@ -96,7 +96,7 @@ tsumego_pdf.create_blank_template(
     draw_bbox_around_diagrams=True,
 )
 ```
-This will create a PDF of 3x2 board of grid size 19x19.
+This will create a PDF of 3x2 boards of grid size 19x19.
 
 <br>
 <br>
