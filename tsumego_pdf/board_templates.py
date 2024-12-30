@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 import reportlab.lib.pagesizes
 from reportlab.pdfgen import canvas
-from .draw_game.board_graphics import DPI, LINE_COLOR, draw_board
+from .draw_game.board_graphics import DPI, BOARD_PADDING_PX, LINE_COLOR, draw_board
 
 
 def create_blank_template(
@@ -43,7 +43,6 @@ def create_blank_template(
 
     img_w = int(paper_size[0] / 72 * DPI)
     img_h = int(paper_size[1] / 72 * DPI)
-    print(f"{img_w}, {img_h}")
     page = Image.new("RGB", (img_w, img_h), (255, 255, 255))
 
     m_l, m_t, m_r, m_b = (
@@ -127,3 +126,107 @@ def create_blank_template(
     out_pdf.save()
 
     os.remove(temp_path)
+
+    print(
+        f"A PDF of blank {board_width}x{board_height} "
+        f'Go boards has been saved to "{out_path}".'
+    )
+
+
+def create_portable_board(
+    paper_size: tuple,  # 72 DPI
+    out_path: str = None,
+    landscape: bool = False,
+    margin_in: dict = {
+        "left": 7 / 8,
+        "top": 29 / 32,
+        "right": 7 / 8,
+        "bottom": 29 / 32,
+    },
+    board_size=19,
+    fill_color=(0, 0, 0),
+):
+    if isinstance(board_size, tuple):
+        board_width, board_height = board_size
+    else:
+        board_width, board_height = board_size, board_size
+
+    y_scale = 1.0421686747
+    stone_size_in = 0.8645833333333333
+    line_width_in = 1 / 48
+    star_point_radius_in = 1 / 16
+
+    if out_path is None:
+        out_path = f"printable board {board_width}x{board_height}.pdf"
+
+    if landscape and paper_size[0] < paper_size[1]:
+        paper_size = (paper_size[1], paper_size[0])
+
+    img_w = int(paper_size[0] / 72 * DPI)
+    img_h = int(paper_size[1] / 72 * DPI)
+
+    page = Image.new("RGB", (img_w, img_h), (255, 255, 255))
+
+    padding_in = BOARD_PADDING_PX / DPI
+
+    board_width_in = stone_size_in * board_width
+
+    board, _ = draw_board(
+        board_width_in,
+        line_width_in=line_width_in,
+        star_point_radius_in=star_point_radius_in,
+        board_size=board_size,
+        y_scale=y_scale,
+        fill_color=fill_color,
+    )
+
+    c = -(DPI * stone_size_in / 2)
+    if stone_size_in * DPI > img_w:
+        m_l = margin_in["left"] * DPI
+        paste_x = int(c + m_l)
+    else:
+        # horizontally centers the board on the page.
+        paste_x = int((img_w - board.size[0]) / 2)
+
+    if stone_size_in * DPI * y_scale > img_h:
+        m_t = margin_in["top"] * DPI
+        paste_y = int(c + m_t)
+    else:
+        # vertically centers the board on the page.
+        paste_y = int((img_h - board.size[1]) / 2)
+
+    page.paste(board, (paste_x, paste_y))
+
+    """
+    Step 2) Creates PDF.
+    """
+    # saves page to a temp file.
+    with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+        temp_path = temp_file.name
+
+    page.save(temp_path)
+
+    # opens PDF writer.
+    out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
+
+    scale_x = paper_size[0] / img_w
+    scale_y = paper_size[1] / img_h
+    scale = min(scale_x, scale_y)
+
+    out_w = img_w * scale
+    out_h = img_h * scale
+
+    out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
+
+    # for _ in range(num_pages):
+    #    out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
+    #    out_pdf.showPage()
+
+    out_pdf.save()
+
+    os.remove(temp_path)
+
+    print(
+        f"A printable {board_width}x{board_height} "
+        f'Go board has been saved to "{out_path}".'
+    )

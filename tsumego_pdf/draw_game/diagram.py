@@ -255,7 +255,7 @@ def make_diagram(
         top = 0
         bottom = h - 1
 
-    if not(left <= 0 and top <= 0 and bottom >= h - 1 and right >= w - 1):
+    if not (left <= 0 and top <= 0 and bottom >= h - 1 and right >= w - 1):
         board = board.crop((left, top, right, bottom))
 
     """

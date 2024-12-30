@@ -202,7 +202,7 @@ def _write_images_to_pdf(
     paths: list,
     out_path: str,
     paper_size,  # 72 DPI
-    verbose: bool, # if True, prints progress bar.
+    verbose: bool,  # if True, prints progress bar.
 ):
     start_time = time.time()
     out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
@@ -242,7 +242,7 @@ def _write_images_to_booklet_pdf(
     booklet_center_padding_in,
     printers_spread: bool,
     booklet_cover: str,
-    verbose: bool, # if True, prints progress bar.
+    verbose: bool,  # if True, prints progress bar.
 ):
     start_time = time.time()
 
@@ -687,11 +687,13 @@ def create_pdf(
     num_pages += 1
 
     for selection in problem_selections:
-        problem_num = selection[0]
-        collection_name = selection[1]
-        section_name = None if len(selection) <= 2 else selection[2]
-
-        problem_dict = get_problem(collection_name, section_name, problem_num)
+        if len(selection) == 1 and selection.endswith(".sgf"):
+            problem_dict = load_problem_from_sgf(selection)
+        else:
+            problem_num = selection[0]
+            collection_name = selection[1]
+            section_name = None if len(selection) <= 2 else selection[2]
+            problem_dict = get_problem(collection_name, section_name, problem_num)
 
         # determines how this puzzle will be randomly flipped.
         flip_xy = random.choice([True, False]) if random_flip else False
@@ -874,7 +876,7 @@ def create_pdf(
                 booklet_center_padding_in,
                 True,
                 booklet_cover,
-                not create_key, # not verbose if key is.
+                not create_key,  # not verbose if key is.
             ),
         )
 
@@ -888,7 +890,7 @@ def create_pdf(
                     booklet_center_padding_in,
                     booklet_key_in_printers_spread,
                     booklet_cover,
-                    True, # verbose.
+                    True,  # verbose.
                 ),
             )
 
@@ -899,7 +901,7 @@ def create_pdf(
                 prob_temp_paths,
                 problems_out_path,
                 page_size,
-                not create_key, # not verbose if key is.
+                not create_key,  # not verbose if key is.
             ),
         )
 
@@ -910,7 +912,7 @@ def create_pdf(
                     key_temp_paths,
                     solutions_out_path,
                     page_size,
-                    True, # verbose.
+                    True,  # verbose.
                 ),
             )
 
@@ -940,9 +942,9 @@ def create_pdf(
         if create_key:
             print(
                 "A collection of tsumego and its key have been saved to "
-                f"{problems_out_path} and {solutions_out_path}.\n"
+                f'"{problems_out_path}" and "{solutions_out_path}".\n'
             )
         else:
             print(
-                "A collection of tsumego has been " f"saved to {problems_out_path}.\n"
+                "A collection of tsumego has been " f'saved to "{problems_out_path}".\n'
             )
