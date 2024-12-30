@@ -59,6 +59,7 @@ def create_blank_template(
         line_width_in=line_width_in,
         star_point_radius_in=star_point_radius_in,
         board_size=board_size,
+        star_points=star_points,
     )
 
     if boards_per_col > 1:
@@ -142,7 +143,8 @@ def create_portable_board(
         "right": 7 / 8,
         "bottom": 29 / 32,
     },
-    board_size=19,
+    board_size=None,
+    board_image_path=None,
     fill_color=(0, 0, 0),
     save_image: bool = False,
 ):
@@ -153,22 +155,40 @@ def create_portable_board(
 
     # the minimum required print margin. if the program has to use
     # multiple papers to print the board, then the normal given
-    # <margin_in> will be used to emulate 
+    # <margin_in> will be used to emulate
     # the real edge dimensions of an actual Go board.
     # if, however, the board is small enough, the program will try
     # to squeeze it onto one piece of paper. in doing so,
     # these margins must be maintained (1/4").
     MIN_MARGIN_PX = {
-        "left": 1/4 * DPI,
-        "top": 1/4 * DPI,
-        "right": 1/4 * DPI,
-        "bottom": 1/4 * DPI,
+        "left": 1 / 4 * DPI,
+        "top": 1 / 4 * DPI,
+        "right": 1 / 4 * DPI,
+        "bottom": 1 / 4 * DPI,
     }
 
-    if isinstance(board_size, tuple):
-        board_width, board_height = board_size
+    if board_image_path is not None:
+        # if a custom image is used,
+        # then the board size will be determined from that
+        # and the star points will be determined from any
+        # red pixels in the image.
+        board_image = Image.open(board_image_path)
+        star_points = []
+        board_width, board_height = board_image.size
+
+        for x in range(board_image.size[0]):
+            for y in range(board_image.size[1]):
+                color = board_image.getpixel((x, y))
+                if color[0] > 200 and color[1] < 20 and color[2] < 20:
+                    star_points.append((x, y))
+
     else:
-        board_width, board_height = board_size, board_size
+        board_image = None
+        star_points = None
+        if isinstance(board_size, tuple):
+            board_width, board_height = board_size
+        else:
+            board_width, board_height = board_size, board_size
 
     if out_path is None:
         out_path = f"printable board {board_width}x{board_height}.pdf"
@@ -187,10 +207,42 @@ def create_portable_board(
         board_width_in,
         line_width_in=LINE_WIDTH_IN,
         star_point_radius_in=STAR_POINT_RADIUS_IN,
-        board_size=board_size,
+        board_size=(board_width, board_height),
         y_scale=Y_SCALE,
         fill_color=fill_color,
+        star_points=star_points,
     )
+
+    cell_width_px = (board.size[0] - BOARD_PADDING_PX * 2) / board_width
+    cell_height_px = (board.size[1] - BOARD_PADDING_PX * 2) / board_height
+
+    # edits the board if a custom image is used.
+    if board_image_path is not None:
+        edit_draw = ImageDraw.Draw(board)
+
+        OFF = BOARD_PADDING_PX
+        w = int(cell_width_px)
+        h = int(cell_height_px)
+        l = int(LINE_WIDTH_IN * DPI / 2)
+        p = int(cell_width_px / 2)
+        q = int(cell_height_px / 2)
+        padding_x = p - l
+        padding_y = q - l
+        for x in range(board_image.size[0]):
+            draw_x = OFF + w * x
+            for y in range(board_image.size[1]):
+                draw_y = OFF + h * y
+                if all(board_image.getpixel((x, y))[i] < 20 for i in range(3)):
+                    # erases over any unused intersections (black pixels in image).
+                    edit_draw.rectangle(
+                        (
+                            draw_x - padding_x + l%2,
+                            draw_y - padding_y + l%2,
+                            draw_x + w + padding_x,
+                            draw_y + h + padding_y,
+                        ),
+                        fill=(255, 255, 255),
+                    )
 
     if save_image:
         out_img_path = out_path[:-4] + ".png"
@@ -201,21 +253,25 @@ def create_portable_board(
     """
     Step 2) Determines dimensions of the printout.
     """
-    cell_width_px = (board.size[0] - BOARD_PADDING_PX * 2) / board_width
-    cell_height_px = (board.size[1] - BOARD_PADDING_PX * 2) / board_height
+    pages_needed_wide = int(
+        (
+            cell_width_px * (board_width - 1)
+            + MIN_MARGIN_PX["left"]
+            + MIN_MARGIN_PX["right"]
+        )
+        // img_w
+        + 1
+    )
 
-    pages_needed_wide = int((
-        cell_width_px * (board_width - 1)
-        + MIN_MARGIN_PX["left"] 
-        + MIN_MARGIN_PX["right"]
-    ) // img_w + 1)
-
-    pages_needed_high = int((
-        cell_height_px * (board_height - 1)
-        + MIN_MARGIN_PX["top"] 
-        + MIN_MARGIN_PX["bottom"]
-    ) // img_h + 1)
-
+    pages_needed_high = int(
+        (
+            cell_height_px * (board_height - 1)
+            + MIN_MARGIN_PX["top"]
+            + MIN_MARGIN_PX["bottom"]
+        )
+        // img_h
+        + 1
+    )
 
     """
     Step 3) Determines where the image of the board must be pasted
@@ -266,7 +322,7 @@ def create_portable_board(
         for page_y in range(pages_needed_high):
             paste_y = start_y + step_y * page_y
             paste_coords.append((paste_x, paste_y))
-    
+
     else:
         # needs several horizontal pages.
         paste_y = int((img_h - board.size[1]) / 2)

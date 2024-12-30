@@ -104,6 +104,7 @@ def draw_board(
     board_size=19,
     y_scale=1.0,
     fill_color=LINE_COLOR,
+    star_points=None,
 ):
     """Returns a drawn Go board."""
     global _STAR_POINT_GRAPHIC, _LAST_CELL_SIZE, _LAST_FACTOR
@@ -208,14 +209,15 @@ def draw_board(
     if board_height >= 12:
         y_horiz_star_coords.extend([3, board_height - 4])
 
-    star_points = []
+    if star_points is None:
+        star_points = []
 
-    if center_point_x is not None and center_point_y is not None:
-        star_points.append((center_point_x, center_point_y))
+        if center_point_x is not None and center_point_y is not None:
+            star_points.append((center_point_x, center_point_y))
 
-    for star_x in x_horiz_star_coords:
-        for star_y in y_horiz_star_coords:
-            star_points.append((star_x, star_y))
+        for star_x in x_horiz_star_coords:
+            for star_y in y_horiz_star_coords:
+                star_points.append((star_x, star_y))
 
     SCALE = 4
     if cell_width_px >= ANTIALIAS_SIZE:
