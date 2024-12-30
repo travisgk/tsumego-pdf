@@ -43,7 +43,6 @@ def create_blank_template(
 
     img_w = int(paper_size[0] / 72 * DPI)
     img_h = int(paper_size[1] / 72 * DPI)
-    page = Image.new("RGB", (img_w, img_h), (255, 255, 255))
 
     m_l, m_t, m_r, m_b = (
         margin_in["left"] * DPI,
@@ -146,15 +145,29 @@ def create_portable_board(
     board_size=19,
     fill_color=(0, 0, 0),
 ):
+    Y_SCALE = 1.0421686747
+    STONE_SIZE_IN = 0.8645833333333333
+    LINE_WIDTH_IN = 1 / 48
+    STAR_POINT_RADIUS_IN = 1 / 16
+
+    # the minimum required print margin. if the program has to use
+    # multiple papers to print the board, then the normal given
+    # <margin_in> will be used to emulate 
+    # the real edge dimensions of an actual Go board.
+    # if, however, the board is small enough, the program will try
+    # to squeeze it onto one piece of paper. in doing so,
+    # these margins must be maintained (1/4").
+    MIN_MARGIN_PX = {
+        "left": 1/4 * DPI,
+        "top": 1/4 * DPI,
+        "right": 1/4 * DPI,
+        "bottom": 1/4 * DPI,
+    }
+
     if isinstance(board_size, tuple):
         board_width, board_height = board_size
     else:
         board_width, board_height = board_size, board_size
-
-    y_scale = 1.0421686747
-    stone_size_in = 0.8645833333333333
-    line_width_in = 1 / 48
-    star_point_radius_in = 1 / 16
 
     if out_path is None:
         out_path = f"printable board {board_width}x{board_height}.pdf"
@@ -165,47 +178,120 @@ def create_portable_board(
     img_w = int(paper_size[0] / 72 * DPI)
     img_h = int(paper_size[1] / 72 * DPI)
 
-    page = Image.new("RGB", (img_w, img_h), (255, 255, 255))
-
     padding_in = BOARD_PADDING_PX / DPI
+    board_width_in = STONE_SIZE_IN * board_width
 
-    board_width_in = stone_size_in * board_width
-
+    # draws the board.
     board, _ = draw_board(
         board_width_in,
-        line_width_in=line_width_in,
-        star_point_radius_in=star_point_radius_in,
+        line_width_in=LINE_WIDTH_IN,
+        star_point_radius_in=STAR_POINT_RADIUS_IN,
         board_size=board_size,
-        y_scale=y_scale,
+        y_scale=Y_SCALE,
         fill_color=fill_color,
     )
 
-    c = -(DPI * stone_size_in / 2)
-    if stone_size_in * DPI > img_w:
-        m_l = margin_in["left"] * DPI
-        paste_x = int(c + m_l)
-    else:
-        # horizontally centers the board on the page.
+    """
+    Step 2) Determines dimensions of the printout.
+    """
+    cell_width_px = (board.size[0] - BOARD_PADDING_PX * 2) / board_width
+    cell_height_px = (board.size[1] - BOARD_PADDING_PX * 2) / board_height
+
+    pages_needed_wide = int((
+        cell_width_px * (board_width - 1)
+        + MIN_MARGIN_PX["left"] 
+        + MIN_MARGIN_PX["right"]
+    ) // img_w + 1)
+
+    pages_needed_high = int((
+        cell_height_px * (board_height - 1)
+        + MIN_MARGIN_PX["top"] 
+        + MIN_MARGIN_PX["bottom"]
+    ) // img_h + 1)
+
+
+    """
+    Step 3) Determines where the image of the board must be pasted
+            in order to render a PDF that can be printed and glued
+            together to be played on.
+    """
+    paste_coords = []
+
+    m_l = margin_in["left"] * DPI
+    m_t = margin_in["top"] * DPI
+    m_r = margin_in["right"] * DPI
+    m_b = margin_in["bottom"] * DPI
+
+    if pages_needed_wide == 1 and pages_needed_high == 1:
+        # centers board on the single page.
+        paste_x = int((img_w - board.size[0]) / 2)
+        paste_y = int((img_h - board.size[1]) / 2)
+        paste_coords.append((paste_x, paste_y))
+
+    elif pages_needed_wide > 1 and pages_needed_high > 1:
+        # creates paste points to render board
+        # across a 2D array of papers.
+        x_off = cell_width_px / 2
+        start_x = int(m_l - x_off)
+        end_x = int(img_w - m_r - board.size[0] + x_off)
+        step_x = (end_x - start_x) / (pages_needed_wide - 1)
+
+        y_off = cell_height_px / 2
+        start_y = int(m_t - y_off)
+        end_y = int(img_h - m_b - board.size[1] + y_off)
+        step_y = (end_y - start_y) / (pages_needed_high - 1)
+
+        for page_x in range(pages_needed_wide):
+            paste_x = start_x + step_x * page_x
+            for page_y in range(pages_needed_high):
+                paste_y = start_y + step_y * page_y
+                paste_coords.append((paste_x, paste_y))
+
+    elif pages_needed_high > 1:
+        # needs several vertical pages.
         paste_x = int((img_w - board.size[0]) / 2)
 
-    if stone_size_in * DPI * y_scale > img_h:
-        m_t = margin_in["top"] * DPI
-        paste_y = int(c + m_t)
+        y_off = cell_height_px / 2
+        start_y = int(m_t - y_off)
+        end_y = int(img_h - m_b - board.size[1] + y_off)
+        step_y = (end_y - start_y) / (pages_needed_high - 1)
+
+        for page_y in range(pages_needed_high):
+            paste_y = start_y + step_y * page_y
+            paste_coords.append((paste_x, paste_y))
+    
     else:
-        # vertically centers the board on the page.
+        # needs several horizontal pages.
         paste_y = int((img_h - board.size[1]) / 2)
 
-    page.paste(board, (paste_x, paste_y))
+        x_off = cell_width_px / 2
+        start_x = int(m_l - x_off)
+        end_x = int(img_w - m_r - board.size[0] + x_off)
+        step_x = (end_x - start_x) / (pages_needed_wide - 1)
+
+        for page_x in range(pages_needed_wide):
+            paste_x = start_x + step_x * page_x
+            paste_coords.append((paste_x, paste_y))
+
+    paste_coords = [(int(x), int(y)) for x, y in paste_coords]
 
     """
-    Step 2) Creates PDF.
+    Step 4) Pastes the board and saves the page images.
     """
-    # saves page to a temp file.
-    with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
-        temp_path = temp_file.name
+    temp_paths = []
+    for paste_x, paste_y in paste_coords:
+        page = Image.new("RGB", (img_w, img_h), (255, 255, 255))
+        page.paste(board, (paste_x, paste_y))
 
-    page.save(temp_path)
+        with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
+            temp_path = temp_file.name
 
+        page.save(temp_path)
+        temp_paths.append(temp_path)
+
+    """
+    Step 5) Creates and saves the PDF.
+    """
     # opens PDF writer.
     out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
 
@@ -216,15 +302,15 @@ def create_portable_board(
     out_w = img_w * scale
     out_h = img_h * scale
 
-    out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
-
-    # for _ in range(num_pages):
-    #    out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
-    #    out_pdf.showPage()
+    for i, temp_path in enumerate(temp_paths):
+        out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
+        if i < len(temp_paths) - 1:
+            out_pdf.showPage()
 
     out_pdf.save()
 
-    os.remove(temp_path)
+    for temp_path in temp_paths:
+        os.remove(temp_path)
 
     print(
         f"A printable {board_width}x{board_height} "
