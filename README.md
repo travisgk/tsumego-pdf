@@ -82,6 +82,20 @@ tsumego_pdf.create_pdf(
 <br>
 <br>
 
+## Print a Go Board
+A Go board can be printed out to be used with actual Go stones. If you want to make a PDF, run:
+```
+tsumego_pdf.create_portable_board(
+    paper_size=reportlab.lib.pagesizes.letter,
+    landscape=True,
+    board_size=(13, 9),
+)
+```
+This will create a 13x9 Go board for a US letter paper size.
+
+<br>
+<br>
+
 ## Creating Blank Templates for Print
 
 ```
@@ -97,20 +111,6 @@ tsumego_pdf.create_blank_template(
 )
 ```
 This will create a PDF of 3x2 boards of grid size 19x19.
-
-<br>
-<br>
-
-## Print a Go Board
-A Go board can be printed out to be used with actual Go stones. If you want to make a PDF, run:
-```
-tsumego_pdf.create_portable_board(
-    paper_size=reportlab.lib.pagesizes.letter,
-    landscape=True,
-    board_size=(13, 9),
-)
-```
-This will create a 13x9 Go board for a US letter paper size.
 
 <br>
 <br>
