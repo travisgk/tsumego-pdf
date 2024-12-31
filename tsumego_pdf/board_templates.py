@@ -226,8 +226,10 @@ def create_portable_board(
         l = int(LINE_WIDTH_IN * DPI / 2)
         p = int(cell_width_px / 2)
         q = int(cell_height_px / 2)
-        padding_x = p - l
-        padding_y = q - l
+        padding_left = p - l
+        padding_top = q - l - 1
+        padding_right = p - l
+        padding_bottom = q - l
         for x in range(board_image.size[0]):
             draw_x = OFF + w * x
             for y in range(board_image.size[1]):
@@ -236,10 +238,10 @@ def create_portable_board(
                     # erases over any unused intersections (black pixels in image).
                     edit_draw.rectangle(
                         (
-                            draw_x - padding_x + l%2,
-                            draw_y - padding_y + l%2,
-                            draw_x + w + padding_x,
-                            draw_y + h + padding_y,
+                            draw_x - padding_left,  # + l%2,
+                            draw_y - padding_top,  # + l%2,
+                            draw_x + w + padding_right,
+                            draw_y + h + padding_bottom,
                         ),
                         fill=(255, 255, 255),
                     )
@@ -253,6 +255,12 @@ def create_portable_board(
     """
     Step 2) Determines dimensions of the printout.
     """
+
+    m_l = margin_in["left"] * DPI
+    m_t = margin_in["top"] * DPI
+    m_r = margin_in["right"] * DPI
+    m_b = margin_in["bottom"] * DPI
+
     pages_needed_wide = int(
         (
             cell_width_px * (board_width - 1)
@@ -273,17 +281,21 @@ def create_portable_board(
         + 1
     )
 
+    if pages_needed_wide > 1 or pages_needed_high > 1:
+        pages_needed_wide = int(
+            (cell_width_px * (board_width) + m_l + m_r) // img_w + 1
+        )
+
+        pages_needed_high = int(
+            (cell_height_px * (board_height) + m_t + m_b) // img_h + 1
+        )
+
     """
     Step 3) Determines where the image of the board must be pasted
             in order to render a PDF that can be printed and glued
             together to be played on.
     """
     paste_coords = []
-
-    m_l = margin_in["left"] * DPI
-    m_t = margin_in["top"] * DPI
-    m_r = margin_in["right"] * DPI
-    m_b = margin_in["bottom"] * DPI
 
     if pages_needed_wide == 1 and pages_needed_high == 1:
         # centers board on the single page.
