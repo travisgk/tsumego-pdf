@@ -76,6 +76,7 @@ def demo_a():
             problem_nums.append(rand_num)
 
     problem_selections = [(num, collection_name) for num in problem_nums]
+    random.shuffle(problem_selections)
 
     tsumego_pdf.create_pdf(
         problem_selections,
