@@ -273,6 +273,10 @@ def _write_images_to_booklet_pdf(
         for i in range(1, num_total_pages - 1, 2):
             render_order.append((i, i + 1))
 
+        if img_paths[num_total_pages - 1] is not None:
+            render_order[0] = (None, 0)
+            render_order.append(num_total_pages - 1, None)
+
     scale_x = paper_size[0] / img_w
     scale_y = paper_size[1] / img_h
     scale = min(scale_x, scale_y)
@@ -307,24 +311,30 @@ def _write_images_to_booklet_pdf(
         out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
         out_pdf.showPage()  # blank for double-sided cover.
 
-        out_pdf.drawImage(
-            dummy_temp_path,
-            ((img_w / 300 * 72) * 0.5) + 5,
-            ((img_h / 300 * 72) * 0.5) - 5,
-            width=10,
-            height=10,
-        )
-        out_pdf.showPage()
+        if printers_spread:
+            out_pdf.drawImage(
+                dummy_temp_path,
+                ((img_w / 300 * 72) * 0.5) + 5,
+                ((img_h / 300 * 72) * 0.5) - 5,
+                width=10,
+                height=10,
+            )
+            out_pdf.showPage()
 
     num_pages = len(render_order)
     for i, row in enumerate(render_order):
         left_element, right_element = row
-        left_path, right_path = img_paths[left_element], img_paths[right_element]
+
+        left_path = None if left_element is None else img_paths[left_element]
+        right_path = None if right_element is None else img_paths[right_element]
 
         left_image = Image.open(left_path) if left_path is not None else None
         right_image = Image.open(right_path) if right_path is not None else None
 
         page_image = Image.new("RGB", (img_w, img_h), (255, 255, 255))
+
+        if not printers_spread and left_image is None and right_image is None:
+            continue
 
         if left_image is not None:
             page_image.paste(left_image, (0, 0))
