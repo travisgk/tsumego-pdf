@@ -9,6 +9,11 @@ TEXT_PADDING_TOP_IN = 1 / 16
 TEXT_PADDING_BOTTOM_IN = 0
 BOARD_PADDING_PX = 2
 
+_STONE_OUTLINE_COLOR = (0, 0, 0)
+_BLACK_STONE_COLOR = (0, 0, 0)
+_WHITE_STONE_COLOR = (255, 255, 255)
+_BOARD_COLOR = (255, 255, 255)
+
 _GRAPHIC_PADDING_PX = 6
 
 
@@ -26,7 +31,7 @@ def _create_stone_graphic(stone_size_px, is_black: bool, outline_thickness_in):
     draw = ImageDraw.Draw(large_image)
 
     # draws a black circle.
-    fill_color = "black"
+    fill_color = _STONE_OUTLINE_COLOR
     center = (large_size[0] / 2, large_size[1] / 2)
     outer_radius = int(stone_size_px / 2 * SCALE)
 
@@ -38,9 +43,9 @@ def _create_stone_graphic(stone_size_px, is_black: bool, outline_thickness_in):
     )
     draw.ellipse(bbox, fill=fill_color)
 
-    if not is_black:
+    if not is_black or _STONE_OUTLINE_COLOR != _BLACK_STONE_COLOR:
         # draws a smaller white circle on top.
-        fill_color = "white"
+        fill_color = _BLACK_STONE_COLOR if is_black else _WHITE_STONE_COLOR
         inner_radius = max(1, int(outer_radius - outline_thickness_in * SCALE * DPI))
 
         bbox = (
@@ -131,7 +136,7 @@ def draw_board(
 
     img_width = int(width_in * DPI) + OFF * 2
     img_height = int(height_in * DPI) + OFF * 2
-    image = Image.new("RGBA", (img_width, img_height), (255, 255, 255, 255))
+    image = Image.new("RGB", (img_width, img_height), _BOARD_COLOR)
 
     """
     Step 2) Draws lines.
