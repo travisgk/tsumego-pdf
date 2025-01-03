@@ -242,12 +242,12 @@ def _write_images_to_booklet_pdf(
     booklet_center_padding_in,
     printers_spread: bool,
     booklet_cover: str,
-    verbose: bool,  # if True, prints progress bar.
+    num_signatures: int = 1,
+    verbose: bool = False,  # if True, prints progress bar.
 ):
     start_time = time.time()
 
     img_paths = paths[:]
-    out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
 
     img_w = int((paper_size[0] / 72) * DPI)
     img_h = int((paper_size[1] / 72) * DPI)
@@ -262,20 +262,44 @@ def _write_images_to_booklet_pdf(
         img_paths.append(None)
 
     render_order = []
+    papers_per_signature = None
+    extra_papers = None
     if printers_spread:
-        for i in range(num_total_pages // 2):
-            if i % 2 == 0:
-                render_order.append((num_total_pages - 1 - i, i))
-            else:
-                render_order.append((i, num_total_pages - 1 - i))
+        papers_per_signature = papers_needed // num_signatures
+        # papers_per_signature = int(np.ceil(papers_per_signature / 2) * 2)
+        extra_papers = papers_needed - (
+            papers_per_signature * num_signatures
+        )  # num papers added to last signature
+
+        print(f"papers_per_signature: {papers_per_signature}")
+        print(f"extra_papers: {extra_papers}")
+
+        for signature_i in range(num_signatures):
+            start_page = signature_i * papers_per_signature * 4
+            end_page = (((signature_i + 1) * papers_per_signature)) * 4 - 1
+            if signature_i == num_signatures - 1:
+                end_page += extra_papers * 4
+
+            print(f"from page {start_page} to {end_page}")
+
+            step = end_page - start_page + 1
+
+            for i in range(start_page, start_page + step // 2):
+                # print(f"\t\t{i}")
+                local_start = i - start_page
+                if i % 2 == 0:
+                    render_order.append((end_page - local_start, i, signature_i))
+                else:
+                    render_order.append((i, end_page - local_start, signature_i))
+
     else:
-        render_order.append((num_total_pages - 1, 0))
+        render_order.append((num_total_pages - 1, 0, None))
         for i in range(1, num_total_pages - 1, 2):
-            render_order.append((i, i + 1))
+            render_order.append((i, i + 1, None))
 
         if img_paths[num_total_pages - 1] is not None:
-            render_order[0] = (None, 0)
-            render_order.append(num_total_pages - 1, None)
+            render_order[0] = (None, 0, None)
+            render_order.append((num_total_pages - 1, None, None))
 
     scale_x = paper_size[0] / img_w
     scale_y = paper_size[1] / img_h
@@ -301,7 +325,17 @@ def _write_images_to_booklet_pdf(
     dummy_image.save(dummy_temp_path)
     temp_paths.append(dummy_temp_path)
 
+    if printers_spread and booklet_cover is not None and num_signatures > 1:
+        cover_path = out_path[:-4] + "-cover.pdf"
+        out_pdf = canvas.Canvas(cover_path, pagesize=paper_size)
+    elif printers_spread and num_signatures > 1 and booklet_cover is None:
+        new_path = out_path[:-4] + f"-signature-0.pdf"
+        out_pdf = canvas.Canvas(new_path, pagesize=paper_size)
+    else:
+        out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
+
     if booklet_cover is not None:
+        # draws cover.
         cover_image = draw_cover(img_w, img_h, booklet_cover)
         with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
             temp_path = temp_file.name
@@ -319,11 +353,34 @@ def _write_images_to_booklet_pdf(
                 width=10,
                 height=10,
             )
-            out_pdf.showPage()
+            if num_signatures > 1:
+                out_pdf.save()
+                new_path = out_path[:-4] + f"-signature-0.pdf"
+                out_pdf = canvas.Canvas(new_path, pagesize=paper_size)
+
+            else:
+                out_pdf.showPage()
 
     num_pages = len(render_order)
+    last_signature_i = 0
+
+    for row in render_order:
+        print(row)
+    print("\n\n")
+
     for i, row in enumerate(render_order):
-        left_element, right_element = row
+        left_element, right_element, signature_i = row
+
+        # print(signature_i)
+
+        if printers_spread and last_signature_i != signature_i and num_signatures > 1:
+            # if last_signature_i != -1:
+            # print("saving")
+            out_pdf.save()
+
+            last_signature_i = signature_i
+            new_path = out_path[:-4] + f"-signature-{signature_i}.pdf"
+            out_pdf = canvas.Canvas(new_path, pagesize=paper_size)
 
         left_path = None if left_element is None else img_paths[left_element]
         right_path = None if right_element is None else img_paths[right_element]
@@ -402,6 +459,7 @@ def _render_page(
     ratio_to_flip_xy,
     bottom_margin,
     booklet_center_padding_in,
+    verbose,
 ):
     global _counter
     page = Image.new(
@@ -462,7 +520,8 @@ def _render_page(
         avg_duration = elapsed / (_counter.value + 1)
         remaining_processes = num_pages - (_counter.value + 1)
         est = remaining_processes * avg_duration
-        _progress_bar(percent_done, est, prefix="1) Render")
+        if verbose:
+            _progress_bar(percent_done, est, prefix="1) Render")
 
     return temp_path
 
@@ -474,6 +533,7 @@ def create_pdf(
     solutions_out_path=None,
     margin_in={"left": 0.5, "top": 0.5, "right": 0.5, "bottom": 0.5},
     is_booklet: bool = False,
+    num_signatures: int = 1,
     booklet_key_in_printers_spread: bool = False,
     booklet_center_padding_in=0,
     booklet_cover: str = "chinese",
@@ -547,6 +607,9 @@ def create_pdf(
                                         as a double-sided booklet (printer spread).
                                         The PDF of the key will by default
                                         be written for display on the computer (reader spread).
+        num_signatures (int): the number of signatures used in a booklet.
+                              if more than 1, then separate PDFs will be saved
+                              for any PDFs using printer's spread.
         booklet_key_in_printers_spread (bool): if True, the key PDF is
                                                made to be printed out.
         booklet_center_padding_in (num): the added margin in the center of the booklet.
@@ -814,6 +877,7 @@ def create_pdf(
         ratio_to_flip_xy=ratio_to_flip_xy,
         bottom_margin=m_b,
         booklet_center_padding_in=booklet_center_padding_in,
+        verbose=verbose,
     )
 
     if create_key:
@@ -841,6 +905,7 @@ def create_pdf(
             ratio_to_flip_xy=ratio_to_flip_xy,
             bottom_margin=m_b,
             booklet_center_padding_in=booklet_center_padding_in,
+            verbose=verbose,
         )
 
         with (
@@ -886,7 +951,8 @@ def create_pdf(
                 booklet_center_padding_in,
                 True,
                 booklet_cover,
-                not create_key,  # not verbose if key is.
+                num_signatures,
+                verbose and not create_key,  # not verbose if key is.
             ),
         )
 
@@ -900,7 +966,8 @@ def create_pdf(
                     booklet_center_padding_in,
                     booklet_key_in_printers_spread,
                     booklet_cover,
-                    True,  # verbose.
+                    num_signatures,
+                    verbose,  # verbose.
                 ),
             )
 
