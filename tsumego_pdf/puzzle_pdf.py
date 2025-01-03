@@ -266,13 +266,9 @@ def _write_images_to_booklet_pdf(
     extra_papers = None
     if printers_spread:
         papers_per_signature = papers_needed // num_signatures
-        # papers_per_signature = int(np.ceil(papers_per_signature / 2) * 2)
         extra_papers = papers_needed - (
             papers_per_signature * num_signatures
         )  # num papers added to last signature
-
-        print(f"papers_per_signature: {papers_per_signature}")
-        print(f"extra_papers: {extra_papers}")
 
         for signature_i in range(num_signatures):
             start_page = signature_i * papers_per_signature * 4
@@ -280,12 +276,9 @@ def _write_images_to_booklet_pdf(
             if signature_i == num_signatures - 1:
                 end_page += extra_papers * 4
 
-            print(f"from page {start_page} to {end_page}")
-
             step = end_page - start_page + 1
 
             for i in range(start_page, start_page + step // 2):
-                # print(f"\t\t{i}")
                 local_start = i - start_page
                 if i % 2 == 0:
                     render_order.append((end_page - local_start, i, signature_i))
@@ -364,20 +357,10 @@ def _write_images_to_booklet_pdf(
     num_pages = len(render_order)
     last_signature_i = 0
 
-    for row in render_order:
-        print(row)
-    print("\n\n")
-
     for i, row in enumerate(render_order):
         left_element, right_element, signature_i = row
-
-        # print(signature_i)
-
         if printers_spread and last_signature_i != signature_i and num_signatures > 1:
-            # if last_signature_i != -1:
-            # print("saving")
             out_pdf.save()
-
             last_signature_i = signature_i
             new_path = out_path[:-4] + f"-signature-{signature_i}.pdf"
             out_pdf = canvas.Canvas(new_path, pagesize=paper_size)
@@ -932,9 +915,10 @@ def create_pdf(
             # maps the partial function to the list of PageTemplate objects.
             prob_temp_paths = pool.map(problem_render_page_partial, page_templates)
 
-    sys.stdout.write("\r" + " " * 80)
-    sys.stdout.flush()
-    sys.stdout.write("\r")
+    if verbose:
+        sys.stdout.write("\r" + " " * 80)
+        sys.stdout.flush()
+        sys.stdout.write("\r")
 
     """
     Step 8) The temporary images are used to create the PDFs.
