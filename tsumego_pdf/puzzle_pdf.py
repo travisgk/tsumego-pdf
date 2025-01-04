@@ -19,8 +19,14 @@ from tsumego_pdf.draw_game.diagram import *
 from tsumego_pdf.puzzles.problems_json import GOKYO_SHUMYO_SECTIONS
 
 _MAX_PROCESSES = 16
-_PAGE_NUM_TEXT_SIZE_IN = 0.125
+_PAGE_NUM_TEXT_SIZE_IN = 1 / 8
 _PAGE_NUM_RGB = (128, 128, 128)
+
+_DRAW_PUNCH_HOLES = True  # only if printers spread is being used.
+_PUNCH_HOLE_RGB = (128, 128, 128)
+_PUNCH_HOLE_RADIUS_IN = 1 / 64
+_PUNCH_HOLE_BEGIN_IN = 1 / 2
+_NUM_PUNCH_HOLES = 6
 
 _counter = multiprocessing.Value("i", 0)  # "i" means it's an integer.
 
@@ -303,6 +309,21 @@ def _write_images_to_booklet_pdf(
 
     temp_paths = []
 
+    punch_hole_image = None
+    if _DRAW_PUNCH_HOLES:
+        punch_hole_image = Image.new("RGB", (256, 256), (255, 255, 255))
+        punch_draw = ImageDraw.Draw(punch_hole_image)
+        punch_draw.ellipse((2, 2, 254, 254), fill=_PUNCH_HOLE_RGB)
+        punch_hole_dim = int(_PUNCH_HOLE_RADIUS_IN * DPI * 2)
+        punch_hole_image = punch_hole_image.resize(
+            (int(punch_hole_dim), int(punch_hole_dim)),
+            Image.Resampling.LANCZOS,
+        )
+        start_y = _PUNCH_HOLE_BEGIN_IN * DPI
+        spacing_y =  (img_h - start_y * 2) / (_NUM_PUNCH_HOLES - 1)
+        holes_y = [start_y + i * spacing_y for i in range(_NUM_PUNCH_HOLES)]
+
+
     dummy_image = Image.new("RGB", (30, 30), (255, 255, 255))
     dummy_draw = ImageDraw.Draw(dummy_image)
     dummy_draw.ellipse((2, 2, 28, 28), fill=(245, 245, 245))
@@ -380,6 +401,7 @@ def _write_images_to_booklet_pdf(
             page_image.paste(left_image, (0, 0))
         if right_image is not None:
             page_image.paste(right_image, (img_w - right_image.size[0], 0))
+
         if left_image is None and right_image is None:
             out_pdf.drawImage(
                 dummy_temp_path,
@@ -388,6 +410,16 @@ def _write_images_to_booklet_pdf(
                 width=10,
                 height=10,
             )
+
+        if _DRAW_PUNCH_HOLES and (
+            i < len(render_order) - 1 
+            and render_order[i + 1][2] != signature_i
+        ) or i == len(render_order) - 1:
+            # draws punch holes for the center pages of each signature.
+            paste_x = int(img_w / 2 - punch_hole_image.size[0] / 2)
+            for hole_y in holes_y:
+                paste_y = int(hole_y - punch_hole_image.size[1] / 2)
+                page_image.paste(punch_hole_image, (paste_x, paste_y))
 
         with tempfile.NamedTemporaryFile(suffix=".png") as temp_file:
             temp_path = temp_file.name
