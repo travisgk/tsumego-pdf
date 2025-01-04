@@ -120,6 +120,10 @@ Problems **#218** and **#533** in the Elementary section of Cho Chikun's problem
 
 <br>
 
+When bookbinding, keep in mind that the punch holes printed in a signature might vary location; make sure they line up manually.
+
+<br>
+
 The solutions come from online Go websites. They are presumed to be correct, but please raise an issue if you believe the solution presented is incorrect and specify the correct solution(s).
 
 <br>
