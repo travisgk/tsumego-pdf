@@ -411,10 +411,10 @@ def _write_images_to_booklet_pdf(
                 height=10,
             )
 
-        if _DRAW_PUNCH_HOLES and (
+        if _DRAW_PUNCH_HOLES and ((
             i < len(render_order) - 1 
             and render_order[i + 1][2] != signature_i
-        ) or i == len(render_order) - 1:
+        ) or i == len(render_order) - 1):
             # draws punch holes for the center pages of each signature.
             paste_x = int(img_w / 2 - punch_hole_image.size[0] / 2)
             for hole_y in holes_y:
