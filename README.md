@@ -120,7 +120,7 @@ Problems **#218** and **#533** in the Elementary section of Cho Chikun's problem
 
 <br>
 
-When bookbinding, keep in mind that the punch holes printed in a signature might vary location; make sure they line up manually.
+When bookbinding, keep in mind that the punch holes printed in a signature might vary a little depending on your printer; make sure they line up manually (they should be relatively close enough).
 
 <br>
 
