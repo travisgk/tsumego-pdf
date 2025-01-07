@@ -409,4 +409,7 @@ def draw_cover(width_px, height_px, booklet_cover: str):
 
     cover.paste(cover_graphic, (paste_x, paste_y), mask=cover_graphic)
 
+    w, h = cover.size
+    cover = cover.crop((w // 2, 0, w, h))
+
     return cover

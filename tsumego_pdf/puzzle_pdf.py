@@ -248,67 +248,26 @@ def _write_images_to_booklet_pdf(
     booklet_center_padding_in,
     printers_spread: bool,
     booklet_cover: str,
+    embed_cover_in_signatures: bool,
     num_signatures: int = 1,
     verbose: bool = False,  # if True, prints progress bar.
 ):
     start_time = time.time()
 
+    # copies paths.
     img_paths = paths[:]
 
+    # gets image width and height in pixels.
     img_w = int((paper_size[0] / 72) * DPI)
     img_h = int((paper_size[1] / 72) * DPI)
 
-    count = len(paths)
-    papers_needed = (count - 1) // 4 + 1
-
-    num_total_pages = papers_needed * 4
-
-    needed_blank_pages = num_total_pages - count
-    for _ in range(needed_blank_pages):
-        img_paths.append(None)
-
-    render_order = []
-    papers_per_signature = None
-    extra_papers = None
-    if printers_spread:
-        papers_per_signature = papers_needed // num_signatures
-        extra_papers = papers_needed - (
-            papers_per_signature * num_signatures
-        )  # num papers added to last signature
-
-        for signature_i in range(num_signatures):
-            start_page = signature_i * papers_per_signature * 4
-            end_page = (((signature_i + 1) * papers_per_signature)) * 4 - 1
-            if signature_i == num_signatures - 1:
-                end_page += extra_papers * 4
-
-            step = end_page - start_page + 1
-
-            for i in range(start_page, start_page + step // 2):
-                local_start = i - start_page
-                if i % 2 == 0:
-                    render_order.append((end_page - local_start, i, signature_i))
-                else:
-                    render_order.append((i, end_page - local_start, signature_i))
-
-    else:
-        render_order.append((num_total_pages - 1, 0, None))
-        for i in range(1, num_total_pages - 1, 2):
-            render_order.append((i, i + 1, None))
-
-        if img_paths[num_total_pages - 1] is not None:
-            render_order[0] = (None, 0, None)
-            render_order.append((num_total_pages - 1, None, None))
-
-    scale_x = paper_size[0] / img_w
-    scale_y = paper_size[1] / img_h
-    scale = min(scale_x, scale_y)
-
-    out_w = img_w * scale
-    out_h = img_h * scale
-
+    """
+    Step 0) Generates resources.
+    """
     temp_paths = []
 
+    # generates the image pasted on the spines of signatures
+    # to help in the process of bookbinding.
     punch_hole_image = None
     if _DRAW_PUNCH_HOLES:
         punch_hole_image = Image.new("RGB", (256, 256), (255, 255, 255))
@@ -320,10 +279,12 @@ def _write_images_to_booklet_pdf(
             Image.Resampling.LANCZOS,
         )
         start_y = _PUNCH_HOLE_BEGIN_IN * DPI
-        spacing_y =  (img_h - start_y * 2) / (_NUM_PUNCH_HOLES - 1)
+        spacing_y = (img_h - start_y * 2) / (_NUM_PUNCH_HOLES - 1)
         holes_y = [start_y + i * spacing_y for i in range(_NUM_PUNCH_HOLES)]
 
-
+    # generates the image that's pasted on blank pages
+    # so that the printer doesn't ignore them when printing.
+    # (some printers will skip entirely blank pages).
     dummy_image = Image.new("RGB", (30, 30), (255, 255, 255))
     dummy_draw = ImageDraw.Draw(dummy_image)
     dummy_draw.ellipse((2, 2, 28, 28), fill=(245, 245, 245))
@@ -339,15 +300,10 @@ def _write_images_to_booklet_pdf(
     dummy_image.save(dummy_temp_path)
     temp_paths.append(dummy_temp_path)
 
-    if printers_spread and booklet_cover is not None and num_signatures > 1:
-        cover_path = out_path[:-4] + "-cover.pdf"
-        out_pdf = canvas.Canvas(cover_path, pagesize=paper_size)
-    elif printers_spread and num_signatures > 1 and booklet_cover is None:
-        new_path = out_path[:-4] + f"-signature-0.pdf"
-        out_pdf = canvas.Canvas(new_path, pagesize=paper_size)
-    else:
-        out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
-
+    """
+    Step 1) Creates cover page.
+    """
+    cover_path = None
     if booklet_cover is not None:
         # draws cover.
         cover_image = draw_cover(img_w, img_h, booklet_cover)
@@ -355,8 +311,121 @@ def _write_images_to_booklet_pdf(
             temp_path = temp_file.name
         cover_image.save(temp_path)
         temp_paths.append(temp_path)
+        cover_path = temp_path
 
-        out_pdf.drawImage(temp_path, 0, 0, width=out_w, height=out_h)
+    """
+    Step 2) Embeds the cover page and back page directly in the first/last
+            signatures if specified to do so.
+    """
+    cover_directly_embedded = False
+    if (
+        embed_cover_in_signatures
+        and printers_spread
+        and booklet_cover is not None
+        and num_signatures > 1
+    ):
+        img_paths = [cover_path, None] + img_paths[:]
+        cover_directly_embedded = True
+
+    """
+    Step 3) Determine the number of needed papers 
+            and adds necessary blank pages.
+    """
+    count = len(img_paths)
+    papers_needed = (count - 1) // 4 + 1
+    num_total_pages = papers_needed * 4
+    needed_blank_pages = num_total_pages - count
+
+    # inserts blank pages.
+    for _ in range(needed_blank_pages):
+        img_paths.append(None)
+
+    if (
+        img_paths[-1] is not None
+        and embed_cover_in_signatures
+        and printers_spread
+        and booklet_cover is not None
+        and num_signatures > 1
+    ):
+        # ensures the back page is blank
+        # if the cover/back page is directly embedded.
+        img_paths.extend([None, None, None, None])
+        count = len(img_paths)
+        papers_needed = (count - 1) // 4 + 1
+        num_total_pages = papers_needed * 4
+        needed_blank_pages = num_total_pages - count
+
+    """
+    Step 4) Establishes the render order of pages per paper.
+    """
+    render_order = []
+    papers_per_signature = None
+    extra_papers = None
+    if printers_spread:
+        # determines the order using printers spread.
+        papers_per_signature = papers_needed // num_signatures
+
+        # the number of papers added to last signature.
+        extra_papers = papers_needed - (papers_per_signature * num_signatures)
+
+        for signature_i in range(num_signatures):
+            # determines the pages displayed for each paper
+            # by iterating through the number of signatures.
+            start_page = signature_i * papers_per_signature * 4
+            end_page = (((signature_i + 1) * papers_per_signature)) * 4 - 1
+            if signature_i == num_signatures - 1:
+                end_page += extra_papers * 4
+
+            step = end_page - start_page + 1
+
+            for i in range(start_page, start_page + step // 2):
+                local_start = i - start_page
+                if i % 2 == 0:
+                    render_order.append((end_page - local_start, i, signature_i))
+                else:
+                    render_order.append((i, end_page - local_start, signature_i))
+
+    else:
+        # determines the order using normal digital display.
+        render_order.append((num_total_pages - 1, 0, None))
+        for i in range(1, num_total_pages - 1, 2):
+            render_order.append((i, i + 1, None))
+
+        if img_paths[num_total_pages - 1] is not None:
+            render_order[0] = (None, 0, None)
+            render_order.append((num_total_pages - 1, None, None))
+
+    """
+    Step 5) Opens PDF writers.
+    """
+    if (
+        printers_spread
+        and booklet_cover is not None
+        and num_signatures > 1
+        and not embed_cover_in_signatures
+    ):
+        cover_path = out_path[:-4] + "-cover.pdf"
+        out_pdf = canvas.Canvas(cover_path, pagesize=paper_size)
+    elif (
+        printers_spread
+        and num_signatures > 1
+        and (booklet_cover is None or embed_cover_in_signatures)
+    ):
+        new_path = out_path[:-4] + f"-signature-0.pdf"
+        out_pdf = canvas.Canvas(new_path, pagesize=paper_size)
+    else:
+        out_pdf = canvas.Canvas(out_path, pagesize=paper_size)
+
+    scale_x = paper_size[0] / img_w
+    scale_y = paper_size[1] / img_h
+    scale = min(scale_x, scale_y)
+
+    out_w = img_w * scale
+    out_h = img_h * scale
+
+    # adds booklet cover.
+    if booklet_cover is not None and not cover_directly_embedded:
+        out_pdf.drawImage(cover_path, out_w // 2, 0, width=out_w // 2, height=out_h)
         out_pdf.showPage()  # blank for double-sided cover.
 
         if printers_spread:
@@ -378,6 +447,9 @@ def _write_images_to_booklet_pdf(
     num_pages = len(render_order)
     last_signature_i = 0
 
+    """
+    Step 6) Writes the page images to the output PDFs.
+    """
     for i, row in enumerate(render_order):
         left_element, right_element, signature_i = row
         if printers_spread and last_signature_i != signature_i and num_signatures > 1:
@@ -395,6 +467,7 @@ def _write_images_to_booklet_pdf(
         page_image = Image.new("RGB", (img_w, img_h), (255, 255, 255))
 
         if not printers_spread and left_image is None and right_image is None:
+            # entirely blank pages are skipped for digital output.
             continue
 
         if left_image is not None:
@@ -411,10 +484,10 @@ def _write_images_to_booklet_pdf(
                 height=10,
             )
 
-        if _DRAW_PUNCH_HOLES and ((
-            i < len(render_order) - 1 
-            and render_order[i + 1][2] != signature_i
-        ) or i == len(render_order) - 1):
+        if _DRAW_PUNCH_HOLES and (
+            (i < len(render_order) - 1 and render_order[i + 1][2] != signature_i)
+            or i == len(render_order) - 1
+        ):
             # draws punch holes for the center pages of each signature.
             paste_x = int(img_w / 2 - punch_hole_image.size[0] / 2)
             for hole_y in holes_y:
@@ -430,6 +503,7 @@ def _write_images_to_booklet_pdf(
         if i < len(render_order) - 1:
             out_pdf.showPage()
 
+        # shows the user how much time is left to export the PDFs.
         percent_done = (i + 1) / num_pages
         elapsed = time.time() - start_time
         avg_duration = elapsed / (i + 1)
@@ -552,6 +626,7 @@ def create_pdf(
     booklet_key_in_printers_spread: bool = False,
     booklet_center_padding_in=0,
     booklet_cover: str = "chinese",
+    embed_cover_in_signatures: bool = False,
     color_to_play: str = "black",
     landscape: bool = False,
     num_columns: int = 2,
@@ -628,6 +703,17 @@ def create_pdf(
         booklet_key_in_printers_spread (bool): if True, the key PDF is
                                                made to be printed out.
         booklet_center_padding_in (num): the added margin in the center of the booklet.
+        booklet_cover (str): the cover displayed.
+                             - "japanese"
+                             - "chinese"
+                             - "korean"
+                             - "japanese-hollow"
+                             - "chinese-hollow"
+                             - "korean-hollow"
+                             - "blank"
+                             - None
+        embed_cover_in_signatures (bool): if True, the cover and back page are directly
+                                          part of the first/last signatures respectively.
         color_to_play (str): "default", "black", "white" or "random".
         landscape (bool): if True, the paper is oriented landscape.
         num_columns (int): the number of columns used to print puzzles.
@@ -967,6 +1053,7 @@ def create_pdf(
                 booklet_center_padding_in,
                 True,
                 booklet_cover,
+                embed_cover_in_signatures,
                 num_signatures,
                 verbose and not create_key,  # not verbose if key is.
             ),
@@ -982,6 +1069,7 @@ def create_pdf(
                     booklet_center_padding_in,
                     booklet_key_in_printers_spread,
                     booklet_cover,
+                    embed_cover_in_signatures,
                     num_signatures,
                     verbose,  # verbose.
                 ),
