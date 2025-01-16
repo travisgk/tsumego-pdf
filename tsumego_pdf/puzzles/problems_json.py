@@ -1,5 +1,6 @@
 import json
 import os
+from .playout import give_resulting_board
 
 _PROBLEMS = None
 
@@ -54,7 +55,7 @@ def read_problems_from_file(file_name: str):
     with open(file_path, "r", encoding="utf-8") as file:
         for line in file:
             clean_line = line.strip()
-            if any(clean_line.startswith(c) for c in "123456789"):
+            if len(clean_line) <= 3 and any(clean_line.startswith(c) for c in "123456789"):
                 # a full problem is shown before the page number,
                 # so we can reset the searching variables.
                 problem_identified = False
@@ -153,7 +154,11 @@ def _load_problems():
 
 
 def get_problem(
-    collection_name=None, section_name=None, problem_num=None, latex_str=None
+    collection_name=None,
+    section_name=None,
+    problem_num=None,
+    latex_str=None,
+    play_out_solution: bool = False,
 ):
     """Returns a dictionary with information about a problem."""
     _load_problems()
@@ -211,6 +216,7 @@ def get_problem(
     default_to_play = "black" if lines[0][0] == "B" else "white"
     lines[0] = lines[0][1:]  # snips off the color-to-play info.
 
+    num_solutions = 0
     max_x = 0
     max_y = 0
     for y, line in enumerate(lines):
@@ -218,6 +224,11 @@ def get_problem(
             if c in "@!":  # a stone.
                 max_x = max(max_x, x)
                 max_y = max(max_y, y)
+            if c == "X":
+                num_solutions += 1
+
+    if play_out_solution and num_solutions == 1:
+        lines = give_resulting_board(lines, default_to_play) # TODO: set equal to
 
     return {
         "show-width": max_x + 1,  # how many stones wide.

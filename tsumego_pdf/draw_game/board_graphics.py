@@ -1,5 +1,15 @@
+"""
+tsumego_pdf.draw_game.board_graphics.py
+---
+This file contains constants and functions to create and store
+graphical components for the drawing of diagrams.
+"""
+
 import os
 from PIL import Image, ImageDraw, ImageFont
+from tsumego_pdf.puzzles.playout import (
+    STONE_TO_NUM, BLACK_STONES, WHITE_STONES
+)
 
 DPI = 300
 
@@ -60,19 +70,6 @@ def _create_stone_graphic(stone_size_px, is_black: bool, outline_thickness_in):
         (int(w), int(h)),
         Image.Resampling.LANCZOS,
     )
-
-
-'''def _create_star_point_graphic(star_point_size, factor, fill_color):
-    """Returns a PIL image with the stone graphic inside."""
-    star_point_image = Image.new("RGBA", (512, 512), (255, 0, 0))#(0, 0, 0, 0))
-    draw = ImageDraw.Draw(star_point_image)
-    radius = 256 * factor  # determines the size of the star point.
-    bbox = (256 - radius, 256 - radius, 256 + radius, 256 + radius)
-    draw.ellipse(bbox, fill=fill_color)
-
-    return star_point_image.resize(
-        (star_point_size, star_point_size), resample=Image.LANCZOS
-    )'''
 
 
 def _create_star_point_graphic(
@@ -291,80 +288,43 @@ def _load_mark_image(stone_size_px, is_black: bool, solution_mark: str):
     return graphic.resize(new_size, Image.Resampling.LANCZOS)
 
 
-_BLACK_STONE_IMAGE = None
-_WHITE_STONE_IMAGE = None
-
-
-def draw_stone(board, x, y, stone_size_px, is_black: bool, outline_thickness_in):
-    """Draws a stone graphic at the given board coordinate."""
-
-    # loads stone graphics if they haven't been loaded yet.
-    global _BLACK_STONE_IMAGE, _WHITE_STONE_IMAGE
-    if _BLACK_STONE_IMAGE is None or _BLACK_STONE_IMAGE.size[0] != stone_size_px:
-        _BLACK_STONE_IMAGE = _create_stone_graphic(
-            stone_size_px,
-            is_black=True,
-            outline_thickness_in=outline_thickness_in,
-        )
-        _WHITE_STONE_IMAGE = _create_stone_graphic(
-            stone_size_px,
-            is_black=False,
-            outline_thickness_in=outline_thickness_in,
-        )
-
-    OFF = BOARD_PADDING_PX
-    draw_x = int(x * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
-    draw_y = int(y * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
-    img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
-    board.paste(img, (draw_x, draw_y), mask=img)
-
-
-_SOLUTION_MARK = None
-_SOLUTION_BLACK_IMAGE = None
-_SOLUTION_WHITE_IMAGE = None
-
-
-def draw_mark(board, x, y, stone_size_px, is_black: bool, solution_mark: str):
-    global _SOLUTION_MARK, _SOLUTION_BLACK_IMAGE, _SOLUTION_WHITE_IMAGE
-    if (
-        _SOLUTION_MARK != solution_mark
-        or _SOLUTION_BLACK_IMAGE.size[0] != stone_size_px
-    ):
-        _SOLUTION_BLACK_IMAGE = _load_mark_image(
-            stone_size_px, is_black=True, solution_mark=solution_mark
-        )
-        _SOLUTION_WHITE_IMAGE = _load_mark_image(
-            stone_size_px, is_black=False, solution_mark=solution_mark
-        )
-
-    OFF = BOARD_PADDING_PX
-    draw_x = int(x * stone_size_px) + OFF
-    draw_y = int(y * stone_size_px) + OFF
-    img = _SOLUTION_BLACK_IMAGE if is_black else _SOLUTION_WHITE_IMAGE
-    board.paste(img, (draw_x, draw_y), mask=img)
-
-
 _FONT = None
+_NUMS_FONT = None
 
-
-def create_text_image(text: str, rgb_fill: tuple, text_height_in=0.21):
-    """Returns an image with text drawn inside."""
+def create_text_image(
+    text: str,
+    rgb_fill: tuple,
+    text_height_in=0.21,
+    transparent: bool=False,
+    is_num: bool=False,
+):
+    """ Returns an image with text drawn inside. """
     # loads font if it hasn't been done yet.
-    global _FONT
+    global _FONT, _NUMS_FONT
     if _FONT is None:
         # loads font.
         local_dir = os.path.dirname(os.path.abspath(__file__))
         font_path = os.path.join(local_dir, "res", "font.ttf")
+        nums_font_path = os.path.join(local_dir, "res", "nums.ttf")
         _FONT = ImageFont.truetype(font_path, size=DPI / 4)
+        _NUMS_FONT = ImageFont.truetype(nums_font_path, size=DPI / 4)
 
     # determines the bbox that the drawn text will have.
-    text_image = Image.new("RGB", (2000, 1000), (255, 255, 255))
+    if transparent:
+        text_image = Image.new("RGBA", (2000, 1000), (255, 255, 255, 0))
+        if len(rgb_fill) == 3:
+            rgb_fill = (*rgb_fill[:3], 255)
+    else:
+        text_image = Image.new("RGB", (2000, 1000), (255, 255, 255))
     text_draw = ImageDraw.Draw(text_image)
-    bbox = text_draw.textbbox((200, 200), text, font=_FONT)
+
+    draw_font = _NUMS_FONT if is_num else _FONT
+
+    bbox = text_draw.textbbox((200, 200), text, font=draw_font)
     bbox = (bbox[0], bbox[1] - 10, bbox[2], bbox[3] + 10)  # pads.
 
     # draws the text, then crops it out according to its bbox.
-    text_draw.text((200, 200), text, font=_FONT, fill=rgb_fill)
+    text_draw.text((200, 200), text, font=draw_font, fill=rgb_fill)
     text_image = text_image.crop(bbox)
     w, h = text_image.size
 
@@ -376,12 +336,134 @@ def create_text_image(text: str, rgb_fill: tuple, text_height_in=0.21):
     ratio = w / h
     width_px = height_px * ratio
 
-    # print(f"w: {w}, h: {h}\twidth: {width_px}, height: {height_px}")
-
     return text_image.resize(
         (int(width_px), int(height_px)),
         Image.Resampling.LANCZOS,
     )
+
+_NUMBERS = None
+_INSIDE_NUMBERS_DARK = None # inside white stone.
+_INSIDE_NUMBERS_LIGHT = None # inside black stone.
+
+_circle = None
+
+def _create_stone_numbers_for_key(stone_size_px):
+    global _NUMBERS, _INSIDE_NUMBERS_DARK, _INSIDE_NUMBERS_LIGHT
+
+    _NUMBERS = []
+    _INSIDE_NUMBERS_DARK = []
+    _INSIDE_NUMBERS_LIGHT = []
+
+    DARK_RGB = (0, 0, 0)
+    LIGHT_RGB = (255, 255, 255)
+    MAX_NUM = 12 # inclusive.
+    INSIDE_SCALE = 0.7
+
+    stone_size_in = stone_size_px / DPI
+    scaled = stone_size_in * INSIDE_SCALE
+
+    
+    def make_num(i, rgb, size_in, add_circle: bool = False):
+        global _circle
+        img = create_text_image(str(i), rgb, size_in, True, is_num=True)
+        w, h = img.size
+        d = int(stone_size_in * DPI)
+
+        result = Image.new("RGBA", (d, d), (255, 255, 255, 0))
+        
+        if add_circle:
+            if _circle is None:
+                # adds a white transparent circle underneath.
+                SCALE = 2
+                _circle = Image.new("RGBA", (d*SCALE, d*SCALE), (255, 255, 255, 0))
+                draw = ImageDraw.Draw(_circle)
+                
+                NUM_FADES = 23
+
+                START_ALPHA = 10
+                END_ALPHA = 255
+                alpha_step = ((END_ALPHA - START_ALPHA) / (NUM_FADES - 1))
+
+                START_DIA = d*SCALE - 4
+                END_DIA = d*SCALE * 0.61
+                dia_step = ((END_DIA - START_DIA) / (NUM_FADES - 1))
+                for i in range(NUM_FADES):
+                    alpha = START_ALPHA + int(alpha_step * i)
+                    dia = START_DIA + int(dia_step * i)
+                    fill = (255, 255, 255, alpha)
+                    m_x = (d*SCALE - dia) / 2
+                    m_y = (d*SCALE - dia) / 2
+                    draw.ellipse(
+                        (int(m_x), int(m_y), int(d*SCALE - m_x), int(d*SCALE - m_y)),
+                        fill=fill,
+                    )
+                
+                diameter = d
+                _circle = _circle.resize(
+                    (int(diameter), int(diameter)),
+                    Image.Resampling.LANCZOS,
+                )
+            draw_x = int((d - _circle.size[0]) / 2)
+            draw_y = int((d - _circle.size[1]) / 2)
+        
+            result.paste(_circle, (draw_x, draw_y), mask=_circle)
+
+
+        draw_x = int((d - w) / 2)
+        draw_y = int((d - h) / 2)
+        result.paste(img, (draw_x, draw_y), mask=img)
+
+        return result
+
+    for i in range(MAX_NUM):
+        _NUMBERS.append(make_num(i, DARK_RGB, scaled, add_circle=True))
+        _INSIDE_NUMBERS_DARK.append(make_num(i, DARK_RGB, scaled))
+        _INSIDE_NUMBERS_LIGHT.append(make_num(i, LIGHT_RGB, scaled))
+
+_BLACK_STONE_IMAGE = None
+_WHITE_STONE_IMAGE = None
+
+_SOLUTION_MARK = None
+_SOLUTION_BLACK_IMAGE = None
+_SOLUTION_WHITE_IMAGE = None
+
+
+def refresh_stone_graphics(stone_size_px, solution_mark: str, outline_thickness_in):
+    # loads stone graphics if they haven't been loaded yet.
+    global _BLACK_STONE_IMAGE, _WHITE_STONE_IMAGE
+    global _SOLUTION_MARK, _SOLUTION_BLACK_IMAGE, _SOLUTION_WHITE_IMAGE
+    if _BLACK_STONE_IMAGE is None or _BLACK_STONE_IMAGE.size[0] != stone_size_px:
+        _BLACK_STONE_IMAGE = _create_stone_graphic(
+            stone_size_px,
+            is_black=True,
+            outline_thickness_in=outline_thickness_in,
+        )
+        _WHITE_STONE_IMAGE = _create_stone_graphic(
+            stone_size_px,
+            is_black=False,
+            outline_thickness_in=outline_thickness_in,
+        )
+        _create_stone_numbers_for_key(stone_size_px)
+
+    if (
+        _SOLUTION_MARK != solution_mark
+        or _SOLUTION_BLACK_IMAGE.size[0] != stone_size_px
+    ):
+        _SOLUTION_BLACK_IMAGE = _load_mark_image(
+            stone_size_px, is_black=True, solution_mark=solution_mark
+        )
+        _SOLUTION_WHITE_IMAGE = _load_mark_image(
+            stone_size_px, is_black=False, solution_mark=solution_mark
+        )
+
+
+def draw_stone(board, x, y, stone_size_px, is_black: bool, outline_thickness_in):
+    """Draws a stone graphic at the given board coordinate."""
+    OFF = BOARD_PADDING_PX
+    draw_x = int(x * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
+    draw_y = int(y * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
+    img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
+    board.paste(img, (draw_x, draw_y), mask=img)
 
 
 def draw_cover(width_px, height_px, booklet_cover: str):
@@ -413,3 +495,26 @@ def draw_cover(width_px, height_px, booklet_cover: str):
     cover = cover.crop((w // 2, 0, w, h))
 
     return cover
+
+
+def draw_mark(board, x, y, stone_size_px, is_black: bool):
+    OFF = BOARD_PADDING_PX
+    draw_x = int(x * stone_size_px) + OFF
+    draw_y = int(y * stone_size_px) + OFF
+    img = _SOLUTION_BLACK_IMAGE if is_black else _SOLUTION_WHITE_IMAGE
+    board.paste(img, (draw_x, draw_y), mask=img)
+
+
+def draw_key_number(board, x, y, stone_size_px, char: str):
+    OFF = BOARD_PADDING_PX
+    draw_x = int(x * stone_size_px) + OFF
+    draw_y = int(y * stone_size_px) + OFF
+
+    if char in "123456789":
+        img = _NUMBERS[int(char)]
+    elif char in BLACK_STONES:
+        img = _INSIDE_NUMBERS_LIGHT[STONE_TO_NUM[char]]
+    else:
+        img = _INSIDE_NUMBERS_DARK[STONE_TO_NUM[char]]
+
+    board.paste(img, (draw_x, draw_y), mask=img)

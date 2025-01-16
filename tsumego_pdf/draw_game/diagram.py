@@ -1,12 +1,19 @@
+"""
+tsumego_pdf.draw_game.diagram.py
+---
+This file contains functionality to draw a tsumego diagram
+with or without the solution(s) marked.
+"""
+
 import json
 import os
 import random
-import time  # DEBUG
 from PIL import Image, ImageDraw
 from tsumego_pdf.puzzles.problems_json import (
     GOKYO_SHUMYO_SECTIONS,
     get_problem,
 )
+from tsumego_pdf.puzzles.playout import BLACK_STONES, WHITE_STONES
 from .board_graphics import *
 
 
@@ -37,6 +44,7 @@ def make_diagram(
     show_problem_num: bool = True,
     force_color_to_play: bool = False,
     create_key: bool = True,
+    play_out_solution: bool = False,
     draw_sole_solving_stone: bool = False,
     solution_mark: str = "x",
     text_rgb: tuple = (128, 128, 128),
@@ -109,6 +117,7 @@ def make_diagram(
     """
     # determine the stone size.
     stone_size_px = calc_stone_size(diagram_width_in, display_width)
+    refresh_stone_graphics(stone_size_px, solution_mark, outline_thickness_in)
 
     # determines color to play.
     if color_to_play == "random":
@@ -133,7 +142,16 @@ def make_diagram(
     """
     Step 2) Get problem info.
     """
-    problem_dict = get_problem(collection_name, section_name, problem_num, latex_str)
+    if not create_key:
+        play_out_solution = False
+        
+    problem_dict = get_problem(
+        collection_name,
+        section_name,
+        problem_num,
+        latex_str,
+        play_out_solution=play_out_solution,
+    )
     lines = problem_dict["lines"]
     default_to_play = problem_dict["default-to-play"]
     max_x = problem_dict["show-width"] - 1
@@ -143,11 +161,13 @@ def make_diagram(
     Step 3) Draws stones and determines the bounding box of the stones.
     """
     invert_colors = color_to_play != "default" and default_to_play != color_to_play
+    NUM_CHARS = "123456789" + BLACK_STONES[1:] + WHITE_STONES[1:]
 
     marks = []
+    solution_nums = []
     for y, line in enumerate(lines):
         for x, c in enumerate(line):
-            if c == "@":  # black stone.
+            if c in BLACK_STONES:  # black stone.
                 draw_stone(
                     board,
                     x,
@@ -156,7 +176,7 @@ def make_diagram(
                     is_black=not invert_colors,
                     outline_thickness_in=outline_thickness_in,
                 )
-            elif c == "!":  # white stone.
+            elif c in WHITE_STONES:  # white stone.
                 draw_stone(
                     board,
                     x,
@@ -167,6 +187,10 @@ def make_diagram(
                 )
             elif create_key and c == "X":  # solution.
                 marks.append((x, y))
+
+            if create_key:
+                if c not in "!@+" and c in NUM_CHARS:
+                    solution_nums.append(((x, y), c))
 
     if max_x == 0:
         max_x = 18
@@ -201,14 +225,17 @@ def make_diagram(
         max_y = placeholder
 
         marks = [(y, x) for x, y in marks]
+        solution_nums = [((p[1], p[0]), c) for p, c in solution_nums]
 
     if flip_x:
         is_top = not is_top
         marks = [(x, 18 - y) for x, y in marks]
+        solution_nums = [((p[0], 18 - p[1]), c) for p, c in solution_nums]
 
     if flip_y:
         is_left = not is_left
         marks = [(18 - x, y) for x, y in marks]
+        solution_nums = [((18 - p[0], p[1]), c) for p, c in solution_nums]
 
     # counts the number of solutions this problem has.
     num_solutions = 0
@@ -219,6 +246,10 @@ def make_diagram(
 
     is_black = color_to_play == "black" or (
         color_to_play == "default" and default_to_play == "black"
+    )
+    mark_is_black = (
+        (is_black and not invert_colors)
+        or (not is_black and invert_colors)
     )
     for x, y in marks:
         if draw_sole_solving_stone and num_solutions == 1:
@@ -231,14 +262,16 @@ def make_diagram(
                 outline_thickness_in=outline_thickness_in,
             )
 
-        draw_mark(
+        draw_mark(board, x, y, stone_size_px, is_black=mark_is_black)
+
+    for point, char in solution_nums:
+        x, y = point
+        draw_key_number(
             board,
             x,
             y,
             stone_size_px,
-            is_black=(is_black and not invert_colors)
-            or (not is_black and invert_colors),
-            solution_mark=solution_mark,
+            char,
         )
 
     # crops the puzzle.

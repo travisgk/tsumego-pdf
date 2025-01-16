@@ -40,6 +40,7 @@ class DiagramTemplate:
         display_width: int = 19,
         include_text: bool = True,
         text_height_in=0.21,
+        play_out_solution: bool = False,
     ):
         self.collection_name = collection_name
         self.section_name = section_name
@@ -49,10 +50,17 @@ class DiagramTemplate:
         self.x = 0
         self.y = 0
 
-        problem = get_problem(collection_name, section_name, problem_num)
+        problem = get_problem(
+            collection_name,
+            section_name,
+            problem_num,
+            play_out_solution=False, # not needed for this process.
+        )
+        
         self.lines = problem["lines"]
         width_stones = problem["show-width"]
         height_stones = problem["show-height"]
+        self.play_out_solution = play_out_solution
 
         if ratio_to_flip_xy < 1:
             min_ratio_to_flip_xy = ratio_to_flip_xy
@@ -159,6 +167,7 @@ def _render_page(
     num_pages: int,
     start_time,
     create_key: bool,
+    play_out_solution: bool,
     diagram_width_in,
     page_width_in,
     page_height_in,
@@ -191,6 +200,7 @@ def _render_page(
             problem_num=diagram_template.problem_num,
             collection_name=diagram_template.collection_name,
             section_name=diagram_template.section_name,
+            play_out_solution=diagram_template.play_out_solution,
             color_to_play=diagram_template.color_to_play,
             is_random_color=diagram_template.is_random_color,
             flip_xy=diagram_template.flip_xy,
@@ -268,6 +278,7 @@ def create_pdf(
     show_problem_num: bool = True,
     force_color_to_play: bool = False,
     create_key: bool = True,
+    play_out_solution: bool = True,
     draw_sole_solving_stone: bool = False,
     solution_mark: str = "x",
     problem_text_rgb: tuple = (128, 128, 128),
@@ -359,6 +370,7 @@ def create_pdf(
         force_color_to_play (bool): if True, the label "black/white to play"
                                     is shown no matter what.
         create_key (bool): if True, a separate PDF with marked answers is created.
+        play_out_solution (bool): if True, the puzzle is played out for the key.
         draw_sole_solving_stone (bool): if True, a stone will be drawn
                                         before the solution marker is drawn
                                         on top of the image, but only if the
@@ -391,6 +403,8 @@ def create_pdf(
 
     num_diagrams_made = 0
     total_diagrams = len(problem_selections)
+    if not create_key:
+        play_out_solution = False
 
     """
     Step 1) Opens ReportLab to create PDFs.
@@ -497,7 +511,13 @@ def create_pdf(
             problem_num = selection[0]
             collection_name = selection[1]
             section_name = None if len(selection) <= 2 else selection[2]
-            problem_dict = get_problem(collection_name, section_name, problem_num)
+            problem_dict = get_problem(
+                collection_name, 
+                section_name, 
+                problem_num,
+                latex_str=None,
+                play_out_solution=play_out_solution,
+            )
 
         # determines how this puzzle will be randomly flipped.
         flip_xy = random.choice([True, False]) if random_flip else False
@@ -525,6 +545,7 @@ def create_pdf(
             display_width,
             include_text,
             text_height_in,
+            play_out_solution,
         )
 
         """
@@ -589,6 +610,7 @@ def create_pdf(
         num_pages=total_pages_to_print,
         start_time=page_render_start,
         create_key=False,
+        play_out_solution=False,
         diagram_width_in=col_width_in,
         page_width_in=page_width_in,
         page_height_in=page_height_in,
@@ -617,6 +639,7 @@ def create_pdf(
             start_time=page_render_start,
             num_pages=total_pages_to_print,
             create_key=True,
+            play_out_solution=play_out_solution,
             diagram_width_in=col_width_in,
             page_width_in=page_width_in,
             page_height_in=page_height_in,
