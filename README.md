@@ -124,7 +124,7 @@ When bookbinding, keep in mind that the punch holes printed in a signature might
 
 <br>
 
-The solutions come from online Go websites. They are presumed to be correct, but please raise an issue if you believe the solution presented is incorrect and specify the correct solution(s). Deeper solutions for single-line solutions were determined using analysis of problems with [KataGo](https://github.com/lightvector/KataGo).
+The solutions come from online Go websites. They are presumed to be correct, but please raise an issue if you believe the solution presented is incorrect and specify the correct solution(s).
 
 <br>
 
