@@ -457,14 +457,19 @@ def create_pdf(
     colspan = column_spacing_in * DPI
     spacing_below = spacing_below_in * DPI
 
+
     col_width_in = (
         page_width_in
-        - margin_in["left"]
-        - margin_in["right"]
+        - (margin_in["left"] + margin_in["right"]) / 2
         - column_spacing_in * (num_columns - 1)
     ) / num_columns
+
     col_width = col_width_in * DPI
-    col_x = [int(m_l + i * (col_width + colspan)) for i in range(num_columns)]
+    left_col_x = [int(m_l + i * (col_width + colspan)) for i in range(num_columns)]
+    right_col_x = [
+        int(i * (col_width + colspan))
+        for i in range(num_columns)
+    ]
 
     stone_size_px = calc_stone_size(col_width_in, display_width)
 
@@ -586,7 +591,12 @@ def create_pdf(
         else:
             paste_y = int(current_y)
 
-        page.paste(diagram_template, (col_x[current_col], paste_y), current_col)
+        if len(page_templates) % 2 == 1:
+            paste_x = left_col_x[current_col]
+        else:
+            paste_x = right_col_x[current_col]
+
+        page.paste(diagram_template, (paste_x, paste_y), current_col)
         current_y += diagram_template.size[1] + spacing_below
 
     if "proportional" in placement_method:
@@ -594,6 +604,7 @@ def create_pdf(
         page.space_diagrams_apart(m_t, h - m_b, use_block, stone_size_px)
 
     page_templates.append(page)
+
 
     """
     Step 7) Render pages from their templates using multiprocessing.
