@@ -460,14 +460,21 @@ def create_pdf(
 
     col_width_in = (
         page_width_in
-        - (margin_in["left"] + margin_in["right"]) / 2
+        - margin_in["left"]
+        - margin_in["right"]
         - column_spacing_in * (num_columns - 1)
     ) / num_columns
 
     col_width = col_width_in * DPI
     left_col_x = [int(m_l + i * (col_width + colspan)) for i in range(num_columns)]
     right_col_x = [
-        int(i * (col_width + colspan))
+        int(
+            (
+                w - m_r - (num_columns - 1) 
+                * (col_width + colspan) - col_width
+            )
+            + i * (col_width + colspan)
+        )
         for i in range(num_columns)
     ]
 
