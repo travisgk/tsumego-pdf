@@ -262,7 +262,12 @@ def make_diagram(
                 outline_thickness_in=outline_thickness_in,
             )
 
-        draw_mark(board, x, y, stone_size_px, is_black=mark_is_black)
+        black_mark = (
+            not mark_is_black 
+            if draw_sole_solving_stone and len(marks) == 1 
+            else mark_is_black
+        )
+        draw_mark(board, x, y, stone_size_px, is_black=black_mark)
 
     for point, char in solution_nums:
         x, y = point
