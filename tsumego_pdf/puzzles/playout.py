@@ -1,3 +1,6 @@
+DRAW_MARK_WHEN_SOLE_SOLUTION = False
+DRAW_MARK_WITH_FULL_SOLUTION = False
+
 STONE_TO_NUM = {
     "❶": 1,
     "❷": 2,
@@ -42,10 +45,6 @@ STONE_TO_NUM = {
 }
 BLACK_STONES = "@❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴"
 WHITE_STONES = "!①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
-
-DRAW_MARK_WHEN_SOLE_SOLUTION = True
-DRAW_MARK_WITH_FULL_SOLUTION = True
-
 
 class GoGame:
     def __init__(self, lines: list, default_to_play: str):
