@@ -1,4 +1,4 @@
-DRAW_MARK_WHEN_SOLE_SOLUTION = False
+DRAW_MARK_WHEN_SOLE_SOLUTION = True
 DRAW_MARK_WITH_FULL_SOLUTION = False
 
 STONE_TO_NUM = {
@@ -45,6 +45,7 @@ STONE_TO_NUM = {
 }
 BLACK_STONES = "@❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴"
 WHITE_STONES = "!①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
+
 
 class GoGame:
     def __init__(self, lines: list, default_to_play: str):
@@ -113,10 +114,12 @@ class GoGame:
             x, y = point
             line = lines[y]
             below_num = self.board[x][y]
-            if len(self._solution_nums) > 1 or not DRAW_MARK_WHEN_SOLE_SOLUTION:
-                char = num_str(move_num, below_num)
-            else:
+            if DRAW_MARK_WITH_FULL_SOLUTION or (
+                len(self._solution_nums) == 1 and DRAW_MARK_WHEN_SOLE_SOLUTION
+            ):
                 char = "X"
+            else:
+                char = num_str(move_num, below_num)
             line = line[:x] + char + line[x + 1 :]
             lines[y] = line
 

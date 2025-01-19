@@ -26,7 +26,7 @@ def calc_stone_size(diagram_width_in, display_width):
     stone_size_in = diagram_width_in / cells_wide
     stone_size_px = stone_size_in * DPI
 
-    return int(stone_size_px)
+    return stone_size_px
 
 
 def make_diagram(
@@ -116,7 +116,7 @@ def make_diagram(
     Step 1) Setup.
     """
     # determine the stone size.
-    stone_size_px = calc_stone_size(diagram_width_in, display_width)
+    stone_size_px = int(calc_stone_size(diagram_width_in, display_width))
     refresh_stone_graphics(stone_size_px, solution_mark, outline_thickness_in)
 
     # determines color to play.
@@ -125,7 +125,7 @@ def make_diagram(
         color_to_play = random.choice(["black", "white"])
 
     # draws a full board.
-    full_board_width_in = (stone_size_px * 19) / DPI
+    full_board_width_in = calc_stone_size(diagram_width_in, display_width) * 19 / DPI
     board, board_draw = draw_board(
         width_in=full_board_width_in,
         line_width_in=line_width_in,
