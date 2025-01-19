@@ -346,8 +346,13 @@ def write_images_to_booklet_pdf(
                 ),
             )
         if right_image is not None:
+            if i == 0 and cover_path is not None:
+                page_paste_x = img_w//2
+            else:
+                page_paste_x = int(img_w / 2 + booklet_center_padding_in * DPI / 2)
+
             page_image.paste(
-                right_image, (int(img_w / 2 + booklet_center_padding_in * DPI / 2), 0)
+                right_image, (page_paste_x, 0)
             )
 
         if left_image is None and right_image is None:
