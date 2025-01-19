@@ -54,9 +54,9 @@ class DiagramTemplate:
             collection_name,
             section_name,
             problem_num,
-            play_out_solution=False, # not needed for this process.
+            play_out_solution=False,  # not needed for this process.
         )
-        
+
         self.lines = problem["lines"]
         width_stones = problem["show-width"]
         height_stones = problem["show-height"]
@@ -436,7 +436,8 @@ def create_pdf(
         page_width_in = (pdf_width_in - booklet_center_padding_in) / 2
     else:
         page_width_in = pdf_width_in
-    page_height_in = pdf_height_in
+    page_width_in = page_width_in - min(margin_in["left"], margin_in["right"])
+    page_height_in = pdf_height_in  # - margin_in["top"] - margin_in["bottom"]
 
     w, h = page_width_in * DPI, page_height_in * DPI
 
@@ -457,28 +458,14 @@ def create_pdf(
     colspan = column_spacing_in * DPI
     spacing_below = spacing_below_in * DPI
 
-
-    col_width_in = (
-        page_width_in
-        - margin_in["left"]
-        - margin_in["right"]
-        - column_spacing_in * (num_columns - 1)
-    ) / num_columns
+    col_width_in = (page_width_in - column_spacing_in * (num_columns - 1)) / num_columns
 
     col_width = col_width_in * DPI
-    left_col_x = [int(m_l + i * (col_width + colspan)) for i in range(num_columns)]
-    right_col_x = [
-        int(
-            (
-                w - m_r - (num_columns - 1) 
-                * (col_width + colspan) - col_width
-            )
-            + i * (col_width + colspan)
-        )
-        for i in range(num_columns)
-    ]
 
     stone_size_px = calc_stone_size(col_width_in, display_width)
+
+    start_x = (w - (stone_size_px * display_width)) / 2 if num_columns == 1 else 0
+    col_x = [int(start_x + i * (col_width + colspan)) for i in range(num_columns)]
 
     num_pages = 1
     current_col = 0
@@ -524,8 +511,8 @@ def create_pdf(
             collection_name = selection[1]
             section_name = None if len(selection) <= 2 else selection[2]
             problem_dict = get_problem(
-                collection_name, 
-                section_name, 
+                collection_name,
+                section_name,
                 problem_num,
                 latex_str=None,
                 play_out_solution=play_out_solution,
@@ -598,10 +585,7 @@ def create_pdf(
         else:
             paste_y = int(current_y)
 
-        if len(page_templates) % 2 == 1:
-            paste_x = left_col_x[current_col]
-        else:
-            paste_x = right_col_x[current_col]
+        paste_x = col_x[current_col]
 
         page.paste(diagram_template, (paste_x, paste_y), current_col)
         current_y += diagram_template.size[1] + spacing_below
@@ -611,7 +595,6 @@ def create_pdf(
         page.space_diagrams_apart(m_t, h - m_b, use_block, stone_size_px)
 
     page_templates.append(page)
-
 
     """
     Step 7) Render pages from their templates using multiprocessing.

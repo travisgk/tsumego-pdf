@@ -144,7 +144,7 @@ def make_diagram(
     """
     if not create_key:
         play_out_solution = False
-        
+
     problem_dict = get_problem(
         collection_name,
         section_name,
@@ -247,10 +247,7 @@ def make_diagram(
     is_black = color_to_play == "black" or (
         color_to_play == "default" and default_to_play == "black"
     )
-    mark_is_black = (
-        (is_black and not invert_colors)
-        or (not is_black and invert_colors)
-    )
+    mark_is_black = (is_black and not invert_colors) or (not is_black and invert_colors)
     for x, y in marks:
         if draw_sole_solving_stone and num_solutions == 1:
             draw_stone(
@@ -263,8 +260,8 @@ def make_diagram(
             )
 
         black_mark = (
-            not mark_is_black 
-            if draw_sole_solving_stone and len(marks) == 1 
+            not mark_is_black
+            if draw_sole_solving_stone and len(marks) == 1
             else mark_is_black
         )
         draw_mark(board, x, y, stone_size_px, is_black=black_mark)

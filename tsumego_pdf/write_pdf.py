@@ -334,9 +334,21 @@ def write_images_to_booklet_pdf(
             continue
 
         if left_image is not None:
-            page_image.paste(left_image, (0, 0))
+            page_image.paste(
+                left_image,
+                (
+                    int(
+                        img_w / 2
+                        - booklet_center_padding_in * DPI / 2
+                        - left_image.size[0]
+                    ),
+                    0,
+                ),
+            )
         if right_image is not None:
-            page_image.paste(right_image, (img_w - right_image.size[0], 0))
+            page_image.paste(
+                right_image, (int(img_w / 2 + booklet_center_padding_in * DPI / 2), 0)
+            )
 
         if left_image is None and right_image is None:
             out_pdf.drawImage(

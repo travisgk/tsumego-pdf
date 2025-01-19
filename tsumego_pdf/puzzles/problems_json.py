@@ -55,7 +55,9 @@ def read_problems_from_file(file_name: str):
     with open(file_path, "r", encoding="utf-8") as file:
         for line in file:
             clean_line = line.strip()
-            if len(clean_line) <= 3 and any(clean_line.startswith(c) for c in "123456789"):
+            if len(clean_line) <= 3 and any(
+                clean_line.startswith(c) for c in "123456789"
+            ):
                 # a full problem is shown before the page number,
                 # so we can reset the searching variables.
                 problem_identified = False
@@ -228,7 +230,7 @@ def get_problem(
                 num_solutions += 1
 
     if play_out_solution and num_solutions == 1:
-        lines = give_resulting_board(lines, default_to_play) # TODO: set equal to
+        lines = give_resulting_board(lines, default_to_play)
 
     return {
         "show-width": max_x + 1,  # how many stones wide.

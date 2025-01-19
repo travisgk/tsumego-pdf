@@ -7,9 +7,7 @@ graphical components for the drawing of diagrams.
 
 import os
 from PIL import Image, ImageDraw, ImageFont
-from tsumego_pdf.puzzles.playout import (
-    STONE_TO_NUM, BLACK_STONES, WHITE_STONES
-)
+from tsumego_pdf.puzzles.playout import STONE_TO_NUM, BLACK_STONES, WHITE_STONES
 
 DPI = 300
 
@@ -291,14 +289,15 @@ def _load_mark_image(stone_size_px, is_black: bool, solution_mark: str):
 _FONT = None
 _NUMS_FONT = None
 
+
 def create_text_image(
     text: str,
     rgb_fill: tuple,
     text_height_in=0.21,
-    transparent: bool=False,
-    is_num: bool=False,
+    transparent: bool = False,
+    is_num: bool = False,
 ):
-    """ Returns an image with text drawn inside. """
+    """Returns an image with text drawn inside."""
     # loads font if it hasn't been done yet.
     global _FONT, _NUMS_FONT
     if _FONT is None:
@@ -341,11 +340,13 @@ def create_text_image(
         Image.Resampling.LANCZOS,
     )
 
+
 _NUMBERS = None
-_INSIDE_NUMBERS_DARK = None # inside white stone.
-_INSIDE_NUMBERS_LIGHT = None # inside black stone.
+_INSIDE_NUMBERS_DARK = None  # inside white stone.
+_INSIDE_NUMBERS_LIGHT = None  # inside black stone.
 
 _circle = None
+
 
 def _create_stone_numbers_for_key(stone_size_px):
     global _NUMBERS, _INSIDE_NUMBERS_DARK, _INSIDE_NUMBERS_LIGHT
@@ -356,13 +357,12 @@ def _create_stone_numbers_for_key(stone_size_px):
 
     DARK_RGB = (0, 0, 0)
     LIGHT_RGB = (255, 255, 255)
-    MAX_NUM = 12 # inclusive.
+    MAX_NUM = 12  # inclusive.
     INSIDE_SCALE = 0.7
 
     stone_size_in = stone_size_px / DPI
     scaled = stone_size_in * INSIDE_SCALE
 
-    
     def make_num(i, rgb, size_in, add_circle: bool = False):
         global _circle
         img = create_text_image(str(i), rgb, size_in, True, is_num=True)
@@ -370,34 +370,39 @@ def _create_stone_numbers_for_key(stone_size_px):
         d = int(stone_size_in * DPI)
 
         result = Image.new("RGBA", (d, d), (255, 255, 255, 0))
-        
+
         if add_circle:
             if _circle is None:
                 # adds a white transparent circle underneath.
                 SCALE = 2
-                _circle = Image.new("RGBA", (d*SCALE, d*SCALE), (255, 255, 255, 0))
+                _circle = Image.new("RGBA", (d * SCALE, d * SCALE), (255, 255, 255, 0))
                 draw = ImageDraw.Draw(_circle)
-                
+
                 NUM_FADES = 23
 
                 START_ALPHA = 10
                 END_ALPHA = 255
-                alpha_step = ((END_ALPHA - START_ALPHA) / (NUM_FADES - 1))
+                alpha_step = (END_ALPHA - START_ALPHA) / (NUM_FADES - 1)
 
-                START_DIA = d*SCALE - 4
-                END_DIA = d*SCALE * 0.61
-                dia_step = ((END_DIA - START_DIA) / (NUM_FADES - 1))
+                START_DIA = d * SCALE - 4
+                END_DIA = d * SCALE * 0.61
+                dia_step = (END_DIA - START_DIA) / (NUM_FADES - 1)
                 for i in range(NUM_FADES):
                     alpha = START_ALPHA + int(alpha_step * i)
                     dia = START_DIA + int(dia_step * i)
                     fill = (255, 255, 255, alpha)
-                    m_x = (d*SCALE - dia) / 2
-                    m_y = (d*SCALE - dia) / 2
+                    m_x = (d * SCALE - dia) / 2
+                    m_y = (d * SCALE - dia) / 2
                     draw.ellipse(
-                        (int(m_x), int(m_y), int(d*SCALE - m_x), int(d*SCALE - m_y)),
+                        (
+                            int(m_x),
+                            int(m_y),
+                            int(d * SCALE - m_x),
+                            int(d * SCALE - m_y),
+                        ),
                         fill=fill,
                     )
-                
+
                 diameter = d
                 _circle = _circle.resize(
                     (int(diameter), int(diameter)),
@@ -405,9 +410,8 @@ def _create_stone_numbers_for_key(stone_size_px):
                 )
             draw_x = int((d - _circle.size[0]) / 2)
             draw_y = int((d - _circle.size[1]) / 2)
-        
-            result.paste(_circle, (draw_x, draw_y), mask=_circle)
 
+            result.paste(_circle, (draw_x, draw_y), mask=_circle)
 
         draw_x = int((d - w) / 2)
         draw_y = int((d - h) / 2)
@@ -419,6 +423,7 @@ def _create_stone_numbers_for_key(stone_size_px):
         _NUMBERS.append(make_num(i, DARK_RGB, scaled, add_circle=True))
         _INSIDE_NUMBERS_DARK.append(make_num(i, DARK_RGB, scaled))
         _INSIDE_NUMBERS_LIGHT.append(make_num(i, LIGHT_RGB, scaled))
+
 
 _BLACK_STONE_IMAGE = None
 _WHITE_STONE_IMAGE = None

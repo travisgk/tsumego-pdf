@@ -1,24 +1,57 @@
 STONE_TO_NUM = {
-    "❶": 1, "❷": 2, "❸": 3, "❹": 4, "❺": 5,
-    "❻": 6, "❼": 7, "❽": 8, "❾": 9, "❿": 10,
-    "⓫": 11, "⓬": 12, "⓭": 13, "⓮": 14, "⓯": 15,
-    "⓰": 16, "⓱": 17, "⓲": 18, "⓳": 19, "⓴": 20,
-    "①": 1, "②": 2, "③": 3, "④": 4, "⑤": 5,
-    "⑥": 6, "⑦": 7, "⑧": 8, "⑨": 9, "⑩": 10,
-    "⑪": 11, "⑫": 12, "⑬": 13, "⑭": 14, "⑮": 15,
-    "⑯": 16, "⑰": 17, "⑱": 18, "⑲": 19, "⑳": 20
+    "❶": 1,
+    "❷": 2,
+    "❸": 3,
+    "❹": 4,
+    "❺": 5,
+    "❻": 6,
+    "❼": 7,
+    "❽": 8,
+    "❾": 9,
+    "❿": 10,
+    "⓫": 11,
+    "⓬": 12,
+    "⓭": 13,
+    "⓮": 14,
+    "⓯": 15,
+    "⓰": 16,
+    "⓱": 17,
+    "⓲": 18,
+    "⓳": 19,
+    "⓴": 20,
+    "①": 1,
+    "②": 2,
+    "③": 3,
+    "④": 4,
+    "⑤": 5,
+    "⑥": 6,
+    "⑦": 7,
+    "⑧": 8,
+    "⑨": 9,
+    "⑩": 10,
+    "⑪": 11,
+    "⑫": 12,
+    "⑬": 13,
+    "⑭": 14,
+    "⑮": 15,
+    "⑯": 16,
+    "⑰": 17,
+    "⑱": 18,
+    "⑲": 19,
+    "⑳": 20,
 }
 BLACK_STONES = "@❶❷❸❹❺❻❼❽❾❿⓫⓬⓭⓮⓯⓰⓱⓲⓳⓴"
 WHITE_STONES = "!①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
 
-DRAW_MARK_WHEN_SOLE_SOLUTION = False
-DRAW_MARK_WITH_FULL_SOLUTION = False
+DRAW_MARK_WHEN_SOLE_SOLUTION = True
+DRAW_MARK_WITH_FULL_SOLUTION = True
+
 
 class GoGame:
     def __init__(self, lines: list, default_to_play: str):
         self.width = len(lines[0])
         self.height = len(lines)
-        
+
         # y, x -> x, y
         self.board = [[0 for _ in range(self.height)] for _ in range(self.width)]
 
@@ -41,7 +74,6 @@ class GoGame:
                     self.board[x][y] = -1
                     self._solution_nums.append(((x, y), STONE_TO_NUM[c]))
 
-
         self._solution_nums.sort(key=lambda x: x[1])
 
         if len(self._solution_nums) == 0:
@@ -49,12 +81,10 @@ class GoGame:
 
         black_is_solving = default_to_play == "black"
         for point, move_num in self._solution_nums:
-            is_black = (
-                (black_is_solving and move_num % 2 == 1)
-                or (not black_is_solving and move_num % 2 == 0)
+            is_black = (black_is_solving and move_num % 2 == 1) or (
+                not black_is_solving and move_num % 2 == 0
             )
             self.play_stone(point, is_black, black_is_solving)
-
 
     def to_lines(self):
         lines = []
@@ -88,7 +118,7 @@ class GoGame:
                 char = num_str(move_num, below_num)
             else:
                 char = "X"
-            line = line[:x] + char + line[x+1: ] 
+            line = line[:x] + char + line[x + 1 :]
             lines[y] = line
 
         return lines
@@ -129,7 +159,7 @@ class GoGame:
 
     def _remove_surrounded_groups(self, point: tuple, was_black: bool):
         orthos = self._orthos_of(point)
-        
+
         opp = -1 if was_black else 1
         opposing_orthos = [(x, y) for x, y in orthos if self.board[x][y] == opp]
         opposing_groups = []
@@ -153,6 +183,7 @@ class GoGame:
         x, y = point
         self.board[x][y] = 1 if is_black else -1
         self._remove_surrounded_groups(point, is_black)
+
 
 def give_resulting_board(lines: list, default_to_play: str):
     game = GoGame(lines, default_to_play)
