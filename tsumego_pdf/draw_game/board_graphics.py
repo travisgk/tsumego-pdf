@@ -464,21 +464,11 @@ def refresh_stone_graphics(stone_size_px, solution_mark: str, outline_thickness_
 
 def draw_stone(board, x, y, stone_size_px, is_black: bool, outline_thickness_in):
     """Draws a stone graphic at the given board coordinate."""
-
     OFF = BOARD_PADDING_PX
-
-    if stone_size_px > _GRAPHIC_PADDING_PX:
-        draw_x = int(x * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
-        draw_y = int(y * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
-        img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
-        board.paste(img, (draw_x, draw_y), mask=img)
-    else:
-        draw_x = int(x * stone_size_px) + OFF
-        draw_y = int(y * stone_size_px) + OFF
-        r = stone_size_px / 2
-        bbox = (int(draw_x - r), int(draw_y - r), int(draw_x + r), int(draw_y + r))
-        draw = ImageDraw.draw(board)
-        draw.ellipse(bbox, fill=_BLACK_STONE_COLOR if is_black else (128, 128, 255))
+    draw_x = int(x * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
+    draw_y = int(y * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
+    img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
+    board.paste(img, (draw_x, draw_y), mask=img)
 
 
 def draw_cover(width_px, height_px, booklet_cover: str):
