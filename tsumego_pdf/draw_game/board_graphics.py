@@ -20,7 +20,7 @@ BOARD_PADDING_PX = 2
 _STONE_OUTLINE_COLOR = (0, 0, 0)
 _BLACK_STONE_COLOR = (0, 0, 0)
 _WHITE_STONE_COLOR = (255, 255, 255)
-_BOARD_COLOR = (255, 255, 255)
+_BOARD_COLOR = (255 , 255, 255)
 
 _GRAPHIC_PADDING_PX = 6
 
@@ -159,7 +159,7 @@ def draw_board(
         draw.line([a, b], fill=fill_color, width=line_width)
 
     """
-    Step 2) Creates the star point image.
+    Step 3) Creates the star point image.
     """
     if line_width % 2 == 1:
         star_point_size = cell_width_px + (1 - (cell_width_px % 2))
@@ -177,7 +177,7 @@ def draw_board(
         )
 
     """
-    Step 3) Determines the board coords for the star points.
+    Step 4) Determines the board coords for the star points.
     """
     radius_px = int(star_point_radius_in * DPI)
 
@@ -469,7 +469,6 @@ def draw_stone(board, x, y, stone_size_px, is_black: bool, outline_thickness_in)
     draw_y = int(y * stone_size_px) - _GRAPHIC_PADDING_PX + OFF
     img = _BLACK_STONE_IMAGE if is_black else _WHITE_STONE_IMAGE
     board.paste(img, (draw_x, draw_y), mask=img)
-
 
 def draw_cover(width_px, height_px, booklet_cover: str):
     """Returns a PIL image for the cover of a booklet."""

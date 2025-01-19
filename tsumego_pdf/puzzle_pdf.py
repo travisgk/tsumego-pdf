@@ -452,18 +452,14 @@ def create_pdf(
         spacing_below_in = margin_in["top"] + margin_in["bottom"]
         draw_top = num_columns > 1
 
-    m_l, m_t = margin_in["left"] * DPI, margin_in["top"] * DPI
-    m_r, m_b = margin_in["right"] * DPI, margin_in["bottom"] * DPI
-
+    m_t, m_b = margin_in["top"] * DPI, margin_in["bottom"] * DPI
     colspan = column_spacing_in * DPI
     spacing_below = spacing_below_in * DPI
 
     col_width_in = (page_width_in - column_spacing_in * (num_columns - 1)) / num_columns
-
     col_width = col_width_in * DPI
 
     stone_size_px = calc_stone_size(col_width_in, display_width)
-
     start_x = (w - (stone_size_px * display_width)) / 2 if num_columns == 1 else 0
     col_x = [int(start_x + i * (col_width + colspan)) for i in range(num_columns)]
 

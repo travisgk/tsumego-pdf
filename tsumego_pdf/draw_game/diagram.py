@@ -125,7 +125,7 @@ def make_diagram(
         color_to_play = random.choice(["black", "white"])
 
     # draws a full board.
-    full_board_width_in = calc_stone_size(diagram_width_in, display_width) * 19 / DPI
+    full_board_width_in = int(calc_stone_size(diagram_width_in, display_width)) * 19 / DPI
     board, board_draw = draw_board(
         width_in=full_board_width_in,
         line_width_in=line_width_in,
@@ -197,6 +197,11 @@ def make_diagram(
     if max_y == 0:
         max_y = 18
 
+    #for 
+    #    OFF = BOARD_PADDING_PX
+    #    draw_x = int(x * stone_size_px) + OFF
+    #    draw_y = int(y * stone_size_px) + OFF
+
     """
     Step 4) Adjusts the bounding box to crop out the puzzle while also
             leaning more toward keeping diagrams ideal for horizontal display.
@@ -264,6 +269,7 @@ def make_diagram(
             if draw_sole_solving_stone and len(marks) == 1
             else mark_is_black
         )
+
         draw_mark(board, x, y, stone_size_px, is_black=black_mark)
 
     for point, char in solution_nums:
