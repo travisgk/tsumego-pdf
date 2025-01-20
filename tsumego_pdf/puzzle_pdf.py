@@ -18,9 +18,9 @@ from tsumego_pdf.draw_game.diagram import *
 from tsumego_pdf.puzzles.problems_json import GOKYO_SHUMYO_SECTIONS
 from .write_pdf import *
 
-_MAX_PROCESSES = 16
+_MAX_PROCESSES = 32
 _PAGE_NUM_TEXT_SIZE_IN = 1 / 8
-_PAGE_NUM_RGB = (128, 128, 128)
+_PAGE_NUM_RGB = (127, 127, 127)
 _counter = multiprocessing.Value("i", 0)  # "i" means it's an integer.
 
 
@@ -54,9 +54,9 @@ class DiagramTemplate:
             collection_name,
             section_name,
             problem_num,
-            play_out_solution=False, # not needed for this process.
+            play_out_solution=False,  # not needed for this process.
         )
-        
+
         self.lines = problem["lines"]
         width_stones = problem["show-width"]
         height_stones = problem["show-height"]
@@ -281,14 +281,14 @@ def create_pdf(
     play_out_solution: bool = True,
     draw_sole_solving_stone: bool = False,
     solution_mark: str = "x",
-    problem_text_rgb: tuple = (128, 128, 128),
-    solution_text_rgb: tuple = (128, 128, 128),
+    problem_text_rgb: tuple = (127, 127, 127),
+    solution_text_rgb: tuple = (127, 127, 127),
     text_height_in=0.2,
     include_page_num: bool = True,
     display_width: int = 12,
     outline_thickness_in=1 / 96,
     line_width_in=1 / 96,
-    star_point_radius_in=1 / 48,
+    star_point_radius_in=None,
     draw_bbox_around_diagrams: bool = False,
     ratio_to_flip_xy=5 / 6,
     verbose: bool = True,
@@ -436,7 +436,8 @@ def create_pdf(
         page_width_in = (pdf_width_in - booklet_center_padding_in) / 2
     else:
         page_width_in = pdf_width_in
-    page_height_in = pdf_height_in
+    page_width_in = page_width_in - min(margin_in["left"], margin_in["right"])
+    page_height_in = pdf_height_in  # - margin_in["top"] - margin_in["bottom"]
 
     w, h = page_width_in * DPI, page_height_in * DPI
 
@@ -451,22 +452,16 @@ def create_pdf(
         spacing_below_in = margin_in["top"] + margin_in["bottom"]
         draw_top = num_columns > 1
 
-    m_l, m_t = margin_in["left"] * DPI, margin_in["top"] * DPI
-    m_r, m_b = margin_in["right"] * DPI, margin_in["bottom"] * DPI
-
+    m_t, m_b = margin_in["top"] * DPI, margin_in["bottom"] * DPI
     colspan = column_spacing_in * DPI
     spacing_below = spacing_below_in * DPI
 
-    col_width_in = (
-        page_width_in
-        - margin_in["left"]
-        - margin_in["right"]
-        - column_spacing_in * (num_columns - 1)
-    ) / num_columns
+    col_width_in = (page_width_in - column_spacing_in * (num_columns - 1)) / num_columns
     col_width = col_width_in * DPI
-    col_x = [int(m_l + i * (col_width + colspan)) for i in range(num_columns)]
 
     stone_size_px = calc_stone_size(col_width_in, display_width)
+    start_x = (w - (stone_size_px * display_width)) / 2 if num_columns == 1 else 0
+    col_x = [int(start_x + i * (col_width + colspan)) for i in range(num_columns)]
 
     num_pages = 1
     current_col = 0
@@ -512,8 +507,8 @@ def create_pdf(
             collection_name = selection[1]
             section_name = None if len(selection) <= 2 else selection[2]
             problem_dict = get_problem(
-                collection_name, 
-                section_name, 
+                collection_name,
+                section_name,
                 problem_num,
                 latex_str=None,
                 play_out_solution=play_out_solution,
@@ -586,7 +581,8 @@ def create_pdf(
         else:
             paste_y = int(current_y)
 
-        page.paste(diagram_template, (col_x[current_col], paste_y), current_col)
+        paste_x = col_x[current_col]
+        page.paste(diagram_template, (paste_x, paste_y), current_col)
         current_y += diagram_template.size[1] + spacing_below
 
     if "proportional" in placement_method:

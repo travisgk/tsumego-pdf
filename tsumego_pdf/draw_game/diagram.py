@@ -47,13 +47,13 @@ def make_diagram(
     play_out_solution: bool = False,
     draw_sole_solving_stone: bool = False,
     solution_mark: str = "x",
-    text_rgb: tuple = (128, 128, 128),
+    text_rgb: tuple = (127, 127, 127),
     text_height_in=0.2,
     display_width: int = 12,
     write_collection_label: bool = False,
     outline_thickness_in=1 / 128,
     line_width_in=1 / 96,
-    star_point_radius_in=1 / 48,
+    star_point_radius_in=None,
     ratio_to_flip_xy=5 / 6,
 ):
     """
@@ -125,9 +125,9 @@ def make_diagram(
         color_to_play = random.choice(["black", "white"])
 
     # draws a full board.
-    full_board_width_in = (stone_size_px * 19) / DPI
+    full_board_width_in = ((stone_size_px * 19) - BOARD_PADDING_PX * 2) / DPI
     board, board_draw = draw_board(
-        width_in=full_board_width_in,
+        stone_size_px=stone_size_px,
         line_width_in=line_width_in,
         star_point_radius_in=star_point_radius_in,
     )
@@ -144,7 +144,7 @@ def make_diagram(
     """
     if not create_key:
         play_out_solution = False
-        
+
     problem_dict = get_problem(
         collection_name,
         section_name,
@@ -247,10 +247,7 @@ def make_diagram(
     is_black = color_to_play == "black" or (
         color_to_play == "default" and default_to_play == "black"
     )
-    mark_is_black = (
-        (is_black and not invert_colors)
-        or (not is_black and invert_colors)
-    )
+    mark_is_black = (is_black and not invert_colors) or (not is_black and invert_colors)
     for x, y in marks:
         if draw_sole_solving_stone and num_solutions == 1:
             draw_stone(
@@ -263,10 +260,11 @@ def make_diagram(
             )
 
         black_mark = (
-            not mark_is_black 
-            if draw_sole_solving_stone and len(marks) == 1 
+            not mark_is_black
+            if draw_sole_solving_stone and len(marks) == 1
             else mark_is_black
         )
+
         draw_mark(board, x, y, stone_size_px, is_black=black_mark)
 
     for point, char in solution_nums:

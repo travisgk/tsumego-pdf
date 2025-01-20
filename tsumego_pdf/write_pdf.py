@@ -15,7 +15,9 @@ _NUM_PUNCH_HOLES = 6
 
 
 def pdf_to_images(pdf_path):
-    """Returns a list of temporary image paths."""
+    """
+    Returns a list of temporary image paths which are the pages of the given PDF.
+    """
     images = pdf2image.convert_from_path(pdf_path)
 
     temp_files = []
@@ -115,6 +117,10 @@ def write_images_to_booklet_pdf(
     num_signatures: int = 1,
     verbose: bool = False,  # if True, prints progress bar.
 ):
+    """
+    Takes the given image paths and writes them to a booklet PDF.
+    It can also output multiple PDFs for bookbinding with multiple signatures.
+    """
     start_time = time.time()
 
     # copies paths.
@@ -334,9 +340,20 @@ def write_images_to_booklet_pdf(
             continue
 
         if left_image is not None:
-            page_image.paste(left_image, (0, 0))
+            page_paste_x = int(
+                img_w / 2 - booklet_center_padding_in * DPI / 2 - left_image.size[0]
+            )
+            dpi_x = int(int(page_paste_x / DPI * 72) * (DPI / 72))
+            page_image.paste(left_image, (dpi_x, 0))
+
         if right_image is not None:
-            page_image.paste(right_image, (img_w - right_image.size[0], 0))
+            if right_path == cover_path:
+                page_paste_x = img_w // 2
+            else:
+                page_paste_x = int(img_w / 2 + booklet_center_padding_in * DPI / 2)
+
+            dpi_x = int(int(page_paste_x / DPI * 72) * (DPI / 72))
+            page_image.paste(right_image, (dpi_x, 0))
 
         if left_image is None and right_image is None:
             out_pdf.drawImage(
