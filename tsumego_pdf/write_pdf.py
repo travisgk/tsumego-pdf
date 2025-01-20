@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 from tsumego_pdf.draw_game.board_graphics import DPI, draw_cover
 
 _DRAW_PUNCH_HOLES = True  # only if printers spread is being used.
-_PUNCH_HOLE_RGB = (128, 128, 128)
+_PUNCH_HOLE_RGB = (127, 127, 127)
 _PUNCH_HOLE_RADIUS_IN = 1 / 64
 _PUNCH_HOLE_BEGIN_IN = 1 / 2
 _NUM_PUNCH_HOLES = 6
@@ -237,14 +237,33 @@ def write_images_to_booklet_pdf(
         # the number of papers added to last signature.
         extra_papers = papers_needed - (papers_per_signature * num_signatures)
 
-        for signature_i in range(num_signatures):
+        num_papers = [papers_per_signature for _ in range(num_signatures)]
+
+        if extra_papers > 1:
+            paper_step = max(2, (num_signatures + 1) // extra_papers)
+            paper_count = papers_per_signature * num_signatures 
+            doing_evens = True
+            i = 0
+            while paper_count < papers_needed:
+                num_papers[i] += 1
+                i += paper_step
+
+                if i > len(num_papers) - 1:
+                    doing_evens = not doing_evens
+                    if doing_evens:
+                        i = 0
+                    else:
+                        i = 1
+                paper_count += 1
+
+        else:
+            num_papers[-1] += extra_papers  
+
+        start_page = 0
+        for signature_i, paper_count in enumerate(num_papers):
             # determines the pages displayed for each paper
             # by iterating through the number of signatures.
-            start_page = signature_i * papers_per_signature * 4
-            end_page = (((signature_i + 1) * papers_per_signature)) * 4 - 1
-            if signature_i == num_signatures - 1:
-                end_page += extra_papers * 4
-
+            end_page = start_page + paper_count * 4 - 1
             step = end_page - start_page + 1
 
             for i in range(start_page, start_page + step // 2):
@@ -253,6 +272,8 @@ def write_images_to_booklet_pdf(
                     render_order.append((end_page - local_start, i, signature_i))
                 else:
                     render_order.append((i, end_page - local_start, signature_i))
+
+            start_page = end_page + 1
 
     else:
         # determines the order using normal digital display.
@@ -300,8 +321,8 @@ def write_images_to_booklet_pdf(
         if printers_spread:
             out_pdf.drawImage(
                 dummy_temp_path,
-                ((img_w / 300 * 72) * 0.5) + 5,
-                ((img_h / 300 * 72) * 0.5) - 5,
+                ((img_w / DPI * 72) * 0.5) + 5,
+                ((img_h / DPI * 72) * 0.5) - 5,
                 width=10,
                 height=10,
             )
@@ -358,13 +379,13 @@ def write_images_to_booklet_pdf(
         if left_image is None and right_image is None:
             out_pdf.drawImage(
                 dummy_temp_path,
-                ((img_w / 300 * 72) * 0.5) + 5,
-                ((img_h / 300 * 72) * 0.5) - 5,
+                ((img_w / DPI * 72) * 0.5) + 5,
+                ((img_h / DPI * 72) * 0.5) - 5,
                 width=10,
                 height=10,
             )
 
-        if _DRAW_PUNCH_HOLES and (
+        if _DRAW_PUNCH_HOLES and printers_spread and (
             (i < len(render_order) - 1 and render_order[i + 1][2] != signature_i)
             or i == len(render_order) - 1
         ):
