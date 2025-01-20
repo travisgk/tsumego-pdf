@@ -151,13 +151,12 @@ class PageTemplate:
                     diagram.y = int(start_y)
                 elif i == len(diagrams) - 1:
                     diagram.y = int(end_y - diagram.size[1])
+                elif block:
+                    diagram.y = int(
+                        stone_size_px * (int(current_y / stone_size_px) + 1)
+                    )
                 else:
-                    if block:
-                        diagram.y = int(
-                            stone_size_px * (int(current_y / stone_size_px) + 1)
-                        )
-                    else:
-                        diagram.y = int(current_y)
+                    diagram.y = int(current_y)
                 current_y += diagram.size[1]
                 current_y += spacing
 
