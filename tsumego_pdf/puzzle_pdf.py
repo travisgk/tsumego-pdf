@@ -18,7 +18,7 @@ from tsumego_pdf.draw_game.diagram import *
 from tsumego_pdf.puzzles.problems_json import GOKYO_SHUMYO_SECTIONS
 from .write_pdf import *
 
-_MAX_PROCESSES = 32
+_MAX_PROCESSES = 16
 _PAGE_NUM_TEXT_SIZE_IN = 1 / 8
 _PAGE_NUM_RGB = (127, 127, 127)
 _counter = multiprocessing.Value("i", 0)  # "i" means it's an integer.
@@ -146,13 +146,18 @@ class PageTemplate:
             spacing = empty_space / (len(diagrams) - 1)
 
             current_y = start_y
-            for diagram in diagrams:
-                if block:
-                    diagram.y = int(
-                        stone_size_px * (int(current_y / stone_size_px) + 1)
-                    )
+            for i, diagram in enumerate(diagrams):
+                if i == 0:
+                    diagram.y = int(start_y)
+                elif i == len(diagrams) - 1:
+                    diagram.y = int(end_y - diagram.size[1])
                 else:
-                    diagram.y = int(current_y)
+                    if block:
+                        diagram.y = int(
+                            stone_size_px * (int(current_y / stone_size_px) + 1)
+                        )
+                    else:
+                        diagram.y = int(current_y)
                 current_y += diagram.size[1]
                 current_y += spacing
 
