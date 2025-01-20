@@ -368,7 +368,7 @@ def make_diagram(
         Step 6) Combines the diagram and label as one image.
         """
         w, h = board.size
-        new_image = Image.new("RGB", (w, h + additional_height), (0, 255, 255))
+        new_image = Image.new("RGB", (w, h + additional_height), (255, 255, 255))
         new_image.paste(board, (0, 0))
 
         if label_str is None:
