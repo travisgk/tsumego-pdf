@@ -26,7 +26,7 @@ def calc_stone_size(diagram_width_in, display_width):
     stone_size_in = diagram_width_in / cells_wide
     stone_size_px = stone_size_in * DPI
 
-    return stone_size_px
+    return int(stone_size_px)
 
 
 def make_diagram(
@@ -116,7 +116,7 @@ def make_diagram(
     Step 1) Setup.
     """
     # determine the stone size.
-    stone_size_px = int(calc_stone_size(diagram_width_in, display_width))
+    stone_size_px = calc_stone_size(diagram_width_in, display_width)
     refresh_stone_graphics(stone_size_px, solution_mark, outline_thickness_in)
 
     # determines color to play.
@@ -125,7 +125,7 @@ def make_diagram(
         color_to_play = random.choice(["black", "white"])
 
     # draws a full board.
-    full_board_width_in = int(calc_stone_size(diagram_width_in, display_width)) * 19 / DPI
+    full_board_width_in = (stone_size_px * 19) / DPI
     board, board_draw = draw_board(
         width_in=full_board_width_in,
         line_width_in=line_width_in,
@@ -144,7 +144,7 @@ def make_diagram(
     """
     if not create_key:
         play_out_solution = False
-
+        
     problem_dict = get_problem(
         collection_name,
         section_name,
@@ -197,11 +197,6 @@ def make_diagram(
     if max_y == 0:
         max_y = 18
 
-    #for 
-    #    OFF = BOARD_PADDING_PX
-    #    draw_x = int(x * stone_size_px) + OFF
-    #    draw_y = int(y * stone_size_px) + OFF
-
     """
     Step 4) Adjusts the bounding box to crop out the puzzle while also
             leaning more toward keeping diagrams ideal for horizontal display.
@@ -252,7 +247,10 @@ def make_diagram(
     is_black = color_to_play == "black" or (
         color_to_play == "default" and default_to_play == "black"
     )
-    mark_is_black = (is_black and not invert_colors) or (not is_black and invert_colors)
+    mark_is_black = (
+        (is_black and not invert_colors)
+        or (not is_black and invert_colors)
+    )
     for x, y in marks:
         if draw_sole_solving_stone and num_solutions == 1:
             draw_stone(
@@ -265,11 +263,10 @@ def make_diagram(
             )
 
         black_mark = (
-            not mark_is_black
-            if draw_sole_solving_stone and len(marks) == 1
+            not mark_is_black 
+            if draw_sole_solving_stone and len(marks) == 1 
             else mark_is_black
         )
-
         draw_mark(board, x, y, stone_size_px, is_black=black_mark)
 
     for point, char in solution_nums:
