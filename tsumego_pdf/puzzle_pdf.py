@@ -157,6 +157,7 @@ class PageTemplate:
                     )
                 else:
                     diagram.y = int(current_y)
+                diagram.y = int(int(diagram.y / DPI * 72) * (DPI / 72))
                 current_y += diagram.size[1]
                 current_y += spacing
 
@@ -440,8 +441,12 @@ def create_pdf(
         page_width_in = (pdf_width_in - booklet_center_padding_in) / 2
     else:
         page_width_in = pdf_width_in
-    page_width_in = page_width_in - min(margin_in["left"], margin_in["right"])
-    page_height_in = pdf_height_in  # - margin_in["top"] - margin_in["bottom"]
+    page_width_in = page_width_in 
+    if is_booklet:
+        page_width_in -= min(margin_in["left"], margin_in["right"])
+    else:
+        page_width_in -= margin_in["left"] + margin_in["right"]
+    page_height_in = pdf_height_in 
 
     w, h = page_width_in * DPI, page_height_in * DPI
 

@@ -9,9 +9,9 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 from tsumego_pdf.puzzles.playout import STONE_TO_NUM, BLACK_STONES, WHITE_STONES
 
-DPI = 300
-
-LINE_COLOR = (127, 127, 127)
+DPI = 288
+GRAY = (171, 171, 171)
+LINE_COLOR = GRAY
 
 TEXT_PADDING_TOP_IN = 1 / 16
 TEXT_PADDING_BOTTOM_IN = 0

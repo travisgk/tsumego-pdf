@@ -5,10 +5,10 @@ import time
 import pdf2image
 from PIL import Image, ImageDraw
 from reportlab.pdfgen import canvas
-from tsumego_pdf.draw_game.board_graphics import DPI, draw_cover
+from tsumego_pdf.draw_game.board_graphics import GRAY, DPI, draw_cover
 
 _DRAW_PUNCH_HOLES = True  # only if printers spread is being used.
-_PUNCH_HOLE_RGB = (127, 127, 127)
+_PUNCH_HOLE_RGB = GRAY
 _PUNCH_HOLE_RADIUS_IN = 1 / 64
 _PUNCH_HOLE_BEGIN_IN = 1 / 2
 _NUM_PUNCH_HOLES = 6
@@ -87,10 +87,12 @@ def write_images_to_pdf(
     out_w = img_w * scale
     out_h = img_h * scale
 
+    padding_x = (paper_size[0] - out_w) // 2
+
     num_pages = len(paths)
 
     for i, path in enumerate(paths):
-        out_pdf.drawImage(path, 0, 0, width=out_w, height=out_h)
+        out_pdf.drawImage(path, padding_x, 0, width=out_w, height=out_h)
         if i < len(paths) - 1:
             out_pdf.showPage()
 

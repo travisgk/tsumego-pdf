@@ -92,7 +92,7 @@ def demo_a():
         placement_method="block-proportional",
         include_text=True,
         problem_text_rgb=(255, 255, 255),
-        solution_text_rgb=(128, 128, 128),
+        solution_text_rgb=(127, 127, 127),
         include_page_num=False,
         display_width=13,
         verbose=True,  # shows progress bar
@@ -197,7 +197,7 @@ def demo_c():
         draw_sole_solving_stone=True,
         solution_mark="star",
         problem_text_rgb=(255, 255, 255),
-        solution_text_rgb=(128, 128, 128),
+        solution_text_rgb=(127, 127, 127),
         include_page_num=True,
         display_width=13,
         verbose=True,  # shows progress bar
@@ -259,7 +259,7 @@ def demo_d():
         draw_sole_solving_stone=False,
         solution_mark="big-star",
         problem_text_rgb=(255, 255, 255),
-        solution_text_rgb=(128, 128, 128),
+        solution_text_rgb=(127, 127, 127),
         include_page_num=False,
         display_width=12,
         outline_thickness_in=1 / 24,
@@ -308,8 +308,8 @@ def demo_e():
         show_problem_num=False,
         draw_sole_solving_stone=True,
         solution_mark="star",
-        problem_text_rgb=(128, 128, 128),
-        solution_text_rgb=(128, 128, 128),
+        problem_text_rgb=(127, 127, 127),
+        solution_text_rgb=(127, 127, 127),
         include_page_num=False,
         display_width=13,
         verbose=True,  # shows progress bar
@@ -399,6 +399,6 @@ if __name__ == "__main__":
     demo_a()
     demo_b()
     demo_c()
-    demo_d()
+    #demo_d()
     demo_e()
     demo_f()
